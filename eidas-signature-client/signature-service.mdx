@@ -1,0 +1,228 @@
+---
+title: 'Signature Service'
+description: 'The Signature Service allows you to create and verify signatures, as well as creating a hash/digest of input data'
+---
+
+## Initialize the Signature Service
+
+The Signature service wants to have a Key Provider as single argument. If you want to use multiple Key Providers you will have to
+instantiate multiple signature services.
+
+````kotlin kotlin
+val signingService = SignatureService(keyProvider = keyProvider)
+````
+
+## Determine Sign Input
+
+Determines the bytes that will serve as input for the `digest` or `createSignature` methods.
+Since multiple signature types are supported the configuration and key are required te determine the appropriate mode of extraction. For instance
+Pades signatures do not need a simple digest of the full file contents, depending on whether the PDF document already contains signatures. This method
+should be called first when creating a signature.
+
+````kotlin kotlin
+val padesConfig = SignatureConfiguration(
+    signatureParameters = SignatureParameters(
+        // Make sure the signature becomes part of the file
+        signaturePackaging = SignaturePackaging.ENVELOPED,
+        // Use RSA and SHA256
+        digestAlgorithm = DigestAlg.SHA256,
+        encryptionAlgorithm = CryptoAlg.RSA,
+        signatureLevelParameters = SignatureLevelParameters(
+            // Set the level to PAdES baseline B
+            signatureLevel = SignatureLevel.PAdES_BASELINE_B,
+        ),
+        signatureFormParameters = SignatureFormParameters(
+            // PAdES specific parameters
+            padesSignatureFormParameters = PadesSignatureFormParameters(
+                signerName = "John Doe",
+                contactInfo = "support@sphereon.com",
+                reason = "Test",
+                location = "Online"
+            )
+        )
+    )
+)
+
+val pdfDoc = File("input.pdf")
+val origData = OrigData(value = pdfDocInput.readBytes(), name = pdfDoc.name)
+val keyEntry = signingService.keyProvider.getKey("test-key")!!
+
+val signInput = signingService.determineSignInput(
+    origData = origData,
+    keyEntry = keyEntry,
+    signMode = SignMode.DOCUMENT,
+    signatureConfiguration = signatureConfiguration
+)
+println(Json { prettyPrint = true; serializersModule = serializers }.encodeToString(signInput))
+````
+
+The below SignInput object could be used directly for the createSignature method or a digest can be created first, so that the input data will never
+traverse a network if a remote Sign REST API or remote Hardware Security Module is being used.
+
+````json json
+{
+  "input": "MYHeMBgGCSqG....TAkxVAgEK",
+  "signMode": "DOCUMENT",
+  "digestAlgorithm": "SHA256",
+  "name": "input.pdf"
+}
+````
+
+## Create a hash digest for additional privacy and security
+
+The `digest` method creates a hash digest out of the SignInput. The hash digest is a one way function that creates the fingerprint of the file. From
+the digest you cannot get back to the original input data/document. This means any Personally Identifiable Data or Data which needs to stay private
+will not be available to methods which need access to a remote REST API or remote Hardware Security Module. This obviously is preferable from a
+privacy and security perspective. It allows users of the library to execute all methods on premise and then depending on the chosen Key
+Provider sign the data either on premise or remotely. In no circumstance will the input data leave the premise.
+
+````kotlin kotlin
+val digestInput = signingService.digest(signInput)
+println(Json { prettyPrint = true; serializersModule = serializers }.encodeToString(digestInput))
+````
+
+Notice that the below SignInput object is different from the passed in SignInput. The input value is shorter as it now is a hash digest. The signMode
+moved from `DOCUMENT` to `DIGEST` so that the `createSignature` method knows not to create a hash digest out of the input anymore.
+
+````json json
+{
+  "input": "fSx6BzHxJ8p3Mn9E52DJ1eNrchfcMa1ZHaSjAi9D5z8=",
+  "signMode": "DIGEST",
+  "digestAlgorithm": "SHA256",
+  "name": "input.pdf"
+}
+````
+
+## Create the signature
+
+The default Signature Service implementations delegate this method to the corresponding method of the KeyProvider, given most
+KeyProviders to not expose private keys for security reasons.
+
+Depending on the Key Provider settings this method could be traversing the network as it might call a signature REST API, or use a
+network/cloud based Hardware Security Module containing the private key to sign. As such we advise to create the digest beforehand so original
+documents/data is not being sent. Only the hash digest will traverse the network.
+
+````kotlin kotlin
+val signature = signingService.createSignature(digestInput, keyEntry)
+println(Json { prettyPrint = true; serializersModule = serializers }.encodeToString(signature))
+````
+
+````json json
+{
+  // The actual signature
+  "value": "SoSsp+Mut3....XEDqEVw==",
+  "algorithm": "RSA_SHA256",
+  "signMode": "DIGEST",
+  // The certificate used during signing
+  "certificate": {
+    "value": "MIID1D....6Q42vNaS"
+  },
+  // The certificate chain including the Certificate Authority (CA) last
+  "certificateChain": [
+    {
+      "value": "MIID1D....6Q42vNaS"
+    },
+    {
+      "value": "MIID6j....GePoU8Ug=="
+    },
+    {
+      "value": "MIIDVzC....PSNfsSBog=="
+    }
+  ]
+}
+````
+
+## Signing the original data, merging the signature
+
+This method takes the original input document, the created signature and merges them together to provide a signed output document. It needs access to
+the configuration to know how and where the signature should be merged with the document.
+
+````kotlin kotlin
+val signOutput = signingService.sign(origData, signature, signatureConfiguration)
+
+// Write the signed bytes to a file
+File("signed-output.pdf").writeBytes(signOutput.value)
+
+println(Json { prettyPrint = true; serializersModule = serializers }.encodeToString(signOutput))
+````
+
+The result of the above is a new file which is the input PDF, but now signed.
+
+````json json
+{
+  // The signed data/document
+  "value": "JVBERi0xLjYNJ....4cmVmCjc2NzUwCiUlRU9GCg==",
+  "signMode": "DIGEST",
+  "digestAlgorithm": "SHA256",
+  "name": "input-pades-baseline-b.pdf",
+  "mimeType": "application/pdf",
+  "signature": {
+    "value": "SoSsp+Mut3....XEDqEVw==",
+    "algorithm": "RSA_SHA256",
+    "signMode": "DIGEST",
+    "certificate": {
+      "value": "MIID1DCC....XxY1e6Q42vNaS"
+    },
+    "certificateChain": [
+      {
+        "value": "MIID1DCC....XxY1e6Q42vNaS"
+      },
+      {
+        "value": "MIID6jCC....Y+TpJGePoU8Ug=="
+      },
+      {
+        "value": "MIIDVzCCAj....PSNfsSBog=="
+      }
+    ]
+  }
+}
+````
+## simpleSign an original data
+This method takes the original input document, and applies the following methods:
+
+First  `determineSignInput` is called, resulting in a `SignInput` object being passed to the `digest` method. Then the `siganture` is being created using `createSignature` with the digest result and last the sign method is using the original data together with the signature. The `SignOutput` containing the signed document as well as signature information is being returned.
+````kotlin kotlin
+val signOutput = signingService.simpleSign(origData, keyEntry, SignMode.DOCUMENT, signatureConfiguration)
+````
+The result of the above is a `SignOutput` which is the original input, but now signed.
+
+````json json
+{
+  // The signed data/document
+  "value": "JVBERi0xLjYNJ....4cmVmCjc2NzUwCiUlRU9GCg==",
+  "signMode": "DIGEST",
+  "digestAlgorithm": "SHA256",
+  "name": "input-pades-baseline-b.pdf",
+  "mimeType": "application/pdf",
+  "signature": {
+    "value": "SoSsp+Mut3....XEDqEVw==",
+    "algorithm": "RSA_SHA256",
+    "signMode": "DIGEST",
+    "certificate": {
+      "value": "MIID1DCC....XxY1e6Q42vNaS"
+    },
+    "certificateChain": [
+      {
+        "value": "MIID1DCC....XxY1e6Q42vNaS"
+      },
+      {
+        "value": "MIID6jCC....Y+TpJGePoU8Ug=="
+      },
+      {
+        "value": "MIIDVzCCAj....PSNfsSBog=="
+      }
+    ]}
+}
+````
+
+## Check whether a signature is valid
+
+The default Signature Service implementations delegate this method to the corresponding method of the KeyProvider.
+
+In order to check whether a signature is valid the SignInput is needed. If a reference to that data is not available anymore the `determineSignInput`
+and depending on whether a hash digest was create the `digest` method are needed to get back the SignInput object.
+
+````kotlin kotlin
+val valid = signingService.isValidSignature(digestInput, signature, signature.certificate!!)
+// Returns a boolean
+````

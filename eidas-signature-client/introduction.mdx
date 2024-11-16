@@ -1,0 +1,84 @@
+---
+title: Introduction
+---
+
+  <img className="block dark:hidden" src="/logo/light.svg" alt="Sphereon" />
+  <img className="hidden dark:block" src="/logo/dark.svg" alt="Sphereon" />
+
+
+The eIDAS Advanced Electronic Signature (AdES) client, allows to sign documents and digests (hashes), using CAdES (CMS, binary data), JAdES (JSON),
+PAdES (PDF), XAdES (XML) signatures, as defined by the European Telecommunications Standards Institute (ETSI). These signatures are part of the eIDAS
+legal framework in the European Union. Next to PAdES it can also create and verify PKCS#7 PDF signatures. These are non-ETSI, but are the more common
+PDF signatures, provided by companies on Adobe's Approved Trust List.
+
+The purpose of this client is to easily create and verify eIDAS and PKCS#7 compliant signatures for documents and input data, using certificates which
+are stored
+in keystore files (PKCS#12) or using hardware (PKCS#11). Documents can be signed by providing the full document or by generating a hash/digest of the
+document first. Especially with remote signing REST APIs part of the Sphereon VDX platform, we suggest to create the digest first and then use the
+signature to merge with the original document. This means you are not sending the full document across the wire, which obviously is better from a
+privacy and security perspective.
+
+
+# Multiplatform library and REST API
+
+This is a multiplatform Kotlin library. Right now it supports Java and Kotlin only. In the future Javascript/Typescript will be added. Please note
+that
+a REST API is also available that has integrated this client, allowing to generate and validate signatures using other languages. Next to Java/Kotlin,
+Javascript/Typescript a .NET SDK is available that integrates with the REST API. SDK code can be generated for other languages based upon the OpenAPI
+3 spec provided with the REST API.
+
+# Signature flow
+
+Creating a signed AdES document comprises several steps. It starts with the Original Data/Document, for which we first need to determine the Sign
+Input. The `SignInput` typically either is the full document, or a part of the document (PDF for instance). The `determineSignInput` method which
+requires the input document together with the signature type and configuration as parameters, automatically determines the Sign Input. The
+determineSignInput can be run locally without the need to use a REST API for instance.
+
+Next there are two options. Directly signing the `SignInput` object using the `createSignature` method, resulting in a signature, or creating a
+Digest (Hash) of the `SignInput`. Since the createSignature method could be using a remote REST service or remote Hardware Security Module for
+instance, it is advisable to use the Digest method in most cases. The Digest method can be run locally, so even if the createSignature method needs to
+access remote resources, no information from the original data/document would be sent across the wire. The digest method accepts a `SignInput` object
+as
+parameter and results in another `SignInput` object, with its sign method set to `DIGEST` instead of the original method of `DOCUMENT`.
+
+The `createSignature` method accepts the `SignInput` object, which the signMode either being `DOCUMENT` or `DIGEST`, depending on which method was
+chosen. It is using the supplied 'KeyEntry' or Key kid string to sign the input object. This can either be done locally or remotely depending on the
+CertProvider implementation. The end result is a `Signature` object.
+
+Lastly the `Signature` object needs to be merged with the original Document. It really depends on the type of signature being used how this is
+achieved. The document could for instance become part of the signature (ENVELOPING), the signature could become part of the document (ENVELOPED), or
+the signature could be detached (DETACHED)
+
+The picture below gives a schematic overview of the process
+
+<Frame>
+<img src="/images/eidas/ades-signature-flow.png" />
+</Frame>
+
+It is possible to use multiple so called _SignatureServices_ with the same _KeyProvider_. This allows for instance to extract bytes and create
+a digest/hash
+from the input file locally, while creating the signature using a REST API or Azure Keyvault for instance. Then the signature is recombined with the
+original document locally. The
+_createSignature_ method and its counterpart _verifySignature_ methods are typically ran using a REST API, Keyvault or locally with PKCS#11 hardware
+Key Providers. It is up to the caller to determine whether creating the digest/hash, and placing the signature in the input document also
+should run
+remotely or not.
+
+For non Kotlin/Java environments we advise to setup the eIDAS Signature REST Microservice on premise, which connects to PKCS#11 hardware, a QTSP or
+Azure Keyvault remotely. Then use the REST endpoints, or use an SDK if available for your language. Please note that these SDKs typically have little
+local processing functionality unlike the Kotlin/Java library. The setup ensures that Personally Identifiable Information (PII) or other sensitive
+information doesn't leave your premise,
+and that only the signature is being created remotely from the Digest/Hash value. It also allows you to use authentication and roles/authorization
+locally on a per key and configuration level.
+
+# License
+
+The signature client (this library) and most integrations are licensed as LGPLv3, meaning they can be integrated into commercial products without a
+problem. Whenever changes are being made to the client or other libraries covered under this license and used by 3rd parties, the source-code
+containing the changes has to be made available.
+
+The REST API is licensed as GNU AGPLv3 as opposed to the libraries and SDKSs. GNU AGPLv3 means that the changed source-code must be made available for
+parties interacting with the REST API.
+
+Commercial clients paying a support fee or paying for on-premise products created by Sphereon get a perpetual commercial license for the particular
+version(s) in use instead of the LGPLv3/GNU AGPLv3 licenses, which doesn't have the aforementioned source-code publication restrictions.

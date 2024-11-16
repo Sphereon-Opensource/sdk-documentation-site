@@ -1,0 +1,237 @@
+---
+title: 'API'
+---
+
+### Evaluate
+
+```typescript
+PEX.evaluatePresentation(presentationDefinition, verifiablePresentation);
+PEXv1.evaluatePresentation(presentationDefinition, verifiablePresentation);
+PEXv2.evaluatePresentation(presentationDefinition, verifiablePresentation);
+```
+
+##### Description
+
+These three methods are quite similar. The first One receives a presentation definition object, decides the version
+based upon feature detection and acts accordingly. The other two are specific to their Presentation Exchange definition
+version.
+
+**For more detailed difference between v1 and v2 please read the [From V1 to V2 section](#from-v1-to-v2)**.
+
+Evaluates whether a presentation submission meets the requested presentation definition Since this method will be used
+both **before** and **after** creating a VerifiablePresentation, we accept both _signed_ and _unsigned_ version of a
+presentation here.
+
+#### Parameters
+
+| name                     | type                     | description                                                                                                                                    |
+|--------------------------|--------------------------|------------------------------------------------------------------------------------------------------------------------------------------------|
+| `presentationDefinition` | `PresentationDefinition` | the presentation definition that initiated the request from the verifier                                                                       |
+| `presentation`           | `IPresentation`          | the Presentation object containing the required credentials and a `presentation_submission` object mapping back to the presentation definition |
+
+#### Return value
+
+If evaluation is successful, `value` will be a non-null `PresentationSubmission` mapping the submitted credentials to
+the requested inputs.
+
+```typescript
+interface EvaluationResults {
+  value?: PresentationSubmission;
+  warnings?: string[];
+  errors?: Error[];
+  verifiableCredential: (IVerifiableCredential | JwtWrappedVerifiableCredential | string)[];
+}
+```
+
+### SelectFrom
+
+```typescript
+PEX.selectFrom(presentationDefinition, credentials, { holderDIDs });
+PEXv1.selectFrom(presentationDefinitionV1, credentials, { holderDIDs });
+PEXv2.selectFrom(presentationDefinitionV2, credentials, { holderDIDs });
+```
+
+##### Description
+
+These three methods are quite similar. The first One receives a presentation definition object, decides the version
+based upon feature detection and acts accordingly. The other two are specific to their version.
+
+**For more detailed difference between v1 and v2 of the spec please read the [From V1 to V2 section](#from-v1-to-v2)**.
+
+Gathers the matching credentials that fit a given presentation definition. Please note that there could be multiple
+results fitting the same criteria. This basically only filters out the credentials that do not match the definition.
+You, or rather the user, typically has to do a final selection.
+
+#### selectFrom Parameters
+
+| name                     | type                                                                    | description                                                                                                                                                  |
+|--------------------------|-------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `presentationDefinition` | `PresentationDefinition`                                                | the presentation definition that initiated the request from the verifier                                                                                     |
+| `credentials`            | `(IVerifiableCredential or JwtWrappedVerifiableCredential or string)[]` | the array of verifiable credentials to select from                                                                                                           |
+| `{ holderDIDs }`         | `string[]`                                                              | the holder's DIDs. this can be found in VerifiablePresentation's holder property note that a wallet can have many holderDIDs retrieved from different places |
+
+#### Return value
+
+- If the selection was successful or partially successful, the `matches` array will consist
+  of `SubmissionRequirementMatch` object(s), representing the matching credentials for each `SubmissionRequirement` in
+  the `presentationDefinition` input parameter.
+- If the selection was not successful, the `errors` array will consist of `Checked` object(s), representing what has
+  failed in your selection process.
+
+```typescript
+import { Status } from './ConstraintUtils';
+
+interface SelectResults {
+  errors?: Checked[];
+  matches?: SubmissionRequirementMatch[];
+  /**
+   * This is the parameter that the PEX library user should look into to determine what to do next
+   * Status can have three values:
+   *  1. INFO: everything is fine, you can call `presentationFrom` after this method
+   *  2. WARN: method was called with more credentials than required.
+   *       To enhance credential holderDID's privacy it is recommended to select credentials which are absolutely required.
+   *  3. Error: the credentials you've sent didn't satisfy the requirement defined presentationDefinition object. Do not submit!
+   */
+  areRequiredCredentialsPresent: Status;
+  /**
+   * All matched/selectable credentials
+   */
+  verifiableCredential?: (IVerifiableCredential | JwtWrappedVerifiableCredential | string)[];
+  /**
+   * Following are indexes of the verifiableCredentials passed to the selectFrom method that have been selected.
+   */
+  vcIndexes?: number[];
+  warnings?: Checked[];
+}
+
+interface SubmissionRequirementMatch {
+  name?: string;
+  rule: Rules;
+  min?: number;
+  count?: number;
+  max?: number;
+  vc_path: string[];
+  from?: string[];
+  from_nested?: SubmissionRequirementMatch[]; // VerifiableCredential Address
+}
+```
+
+### PresentationFrom
+
+```typescript
+PEX.presentationFrom(presentationDefinition, selectedCredentials, { holderDID });
+PEXv1.presentationFrom(presentationDefinitionV1, selectedCredentials, { holderDID });
+PEXv2.presentationFrom(presentationDefinitionV2, selectedCredentials, { holderDID });
+```
+
+##### Description
+
+These three methods are quite similar. The first One receives a presentation definition object, decides the version
+based upon feature detection and acts accordingly. The other two are specific to their version.
+
+**For more detailed difference between v1 and v2 specification please read the [From V1 to V2 section](#from-v1-to-v2)
+**.
+
+Creates the corresponding Presentation Submission object to be included in the Verifiable Presentation response, which
+maps the submitted credentials to the requested inputs in the `presentationDefinition` input parameter.
+
+#### presentationFromV1 Parameters
+
+| name                     | type                                                                    | description                                                                                                                                                  |
+|--------------------------|-------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `presentationDefinition` | `PresentationDefinitionV1`                                              | the v1 presentation definition that initiated the request from the verifier                                                                                  |
+| `selectedCredentials`    | `(IVerifiableCredential or JwtWrappedVerifiableCredential or string)[]` | the array of verifiable credentials that meet the submission requirements in the presentation definition                                                     |
+| `{ holderDID }`          | `string`                                                                | the holder's DID. This can be found in IVerifiablePresentation's holder property note that a wallet can have many holderDIDs retrieved from different places |
+
+#### presentationFromV2 Parameters
+
+| name                     | type                                                                    | description                                                                                                                                                  |
+|--------------------------|-------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `presentationDefinition` | `PresentationDefinitionV2`                                              | the v2 presentation definition that initiated the request from the verifier                                                                                  |
+| `selectedCredentials`    | `(IVerifiableCredential or JwtWrappedVerifiableCredential or string)[]` | the array of verifiable credentials that meet the submission requirements in the presentation definition                                                     |
+| `{ holderDID }`          | `string`                                                                | the holder's DID. This can be found in IVerifiablePresentation's holder property note that a wallet can have many holderDIDs retrieved from different places |
+
+#### Return value
+
+If the selected credentials successfully match the submission requirements in the presentation definition, the return
+value will be a non-null 'Presentation' containing a `PresentationSubmission`
+
+```typescript
+interface PresentationSubmission {
+  id?: string;
+  definition_id: string;
+  descriptor_map: Descriptor[];
+}
+```
+
+### Validation
+
+```typescript
+PEX.validateDefinition(objToValidate);
+PEXv1.validateDefinition(objToValidate);
+PEXv2.validateDefinition(objToValidate);
+```
+
+```typescript
+validateSubmission(objToValidate);
+```
+
+#### Description
+
+A validation utility function for `PresentationDefinition` and `PresentationSubmission` objects. If you know the version
+of your presentation definition you can call version-specific functions. If not you can call the general one (located in
+PEX) to first determine the version and then validate the presentation definition object against that version's specific
+rules.
+
+#### Parameters
+
+| name            | type                                                              | description                                                            |
+|-----------------|-------------------------------------------------------------------|------------------------------------------------------------------------|
+| `objToValidate` | <code>PresentationDefinition &#124; PresentationSubmission</code> | the presentation definition or presentation submission to be validated |
+
+#### Return value
+
+The `validate` method returns a validated results array `NonEmptyArray<Checked>` , with structure:
+
+```typescript
+interface Checked {
+  tag: string;
+  status: Status;
+  message?: string;
+}
+```
+
+status can have following values `'info' | 'warn' | 'error'`
+
+### Definition Version Discovery
+
+```typescript
+PEX.definitionVersionDiscovery(presentationDefinition);
+```
+
+#### Description
+
+A utility function for `PresentationDefinition` objects. This method will determine the version of your
+presentationDefinition object.
+
+#### Parameters
+
+| name                     | type                                | description                                                         |
+|--------------------------|-------------------------------------|---------------------------------------------------------------------|
+| `presentationDefinition` | <code>PresentationDefinition</code> | the presentation definition that you need to decide the version for |
+
+#### Return value
+
+The `definitionVersionDiscovery` method returns a version or an error, with following structure:
+
+```typescript
+interface DiscoveredVersion {
+  version?: PEVersion;
+  error?: string;
+}
+
+enum PEVersion {
+  v1 = 'v1',
+  v2 = 'v2',
+}
+```

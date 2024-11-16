@@ -1,78 +1,133 @@
 {
   "$schema": "https://mintlify.com/schema.json",
-  "name": "Starter Kit",
+  "name": "Docs",
   "logo": {
     "dark": "/logo/dark.svg",
     "light": "/logo/light.svg"
   },
   "favicon": "/favicon.svg",
   "colors": {
-    "primary": "#0D9373",
-    "light": "#07C983",
-    "dark": "#0D9373",
+    "primary": "#352575",
+    "light": "#e8261f",
+    "dark": "#e8261f",
     "anchors": {
-      "from": "#0D9373",
-      "to": "#07C983"
+      "from": "#352575",
+      "to": "#4d30c4"
     }
   },
   "topbarLinks": [
     {
       "name": "Support",
-      "url": "mailto:hi@mintlify.com"
+      "url": "https://support.sphereon.com/"
     }
   ],
   "topbarCtaButton": {
-    "name": "Dashboard",
-    "url": "https://dashboard.mintlify.com"
+    "name": "Github",
+    "url": "https://github.com/Sphereon-Opensource"
   },
   "tabs": [
     {
       "name": "API Reference",
       "url": "api-reference"
+    },
+    {
+      "name": "Changelogs",
+      "url": "changelogs"
     }
   ],
   "anchors": [
     {
-      "name": "Documentation",
-      "icon": "book-open-cover",
-      "url": "https://mintlify.com/docs"
+      "name": "Work",
+      "icon": "user",
+      "url": "https://sphereon.com/blockchain-job-openings-at-sphereon/"
     },
     {
-      "name": "Community",
-      "icon": "slack",
-      "url": "https://mintlify.com/community"
-    },
-    {
-      "name": "Blog",
+      "name": "News",
       "icon": "newspaper",
-      "url": "https://mintlify.com/blog"
+      "url": "https://sphereon.com/news-and-insights/"
     }
   ],
   "navigation": [
     {
       "group": "Get Started",
+      "pages": ["introduction"]
+    },
+    {
+      "group": "SSI SDK",
       "pages": [
-        "introduction",
-        "quickstart",
-        "development"
+        "changelogs/ssi-sdk/general",
+        "changelogs/ssi-sdk/pd-manager-rest-api"
       ]
     },
     {
-      "group": "Essentials",
+      "group": "eIDAS Advanced Electronic Signature Client",
       "pages": [
-        "essentials/markdown",
-        "essentials/code",
-        "essentials/images",
-        "essentials/settings",
-        "essentials/navigation",
-        "essentials/reusable-snippets"
+        "eidas-signature-client/introduction",
+        "eidas-signature-client/development",
+        "eidas-signature-client/key-provider-service",
+        "eidas-signature-client/signature-service",
+        "eidas-signature-client/pdf-signatures",
+        "eidas-signature-client/verifiable-credentials-and-ssi",
+        "changelogs/eidas-signature-client/changelog"
+      ]
+    },
+    {
+      "group": "OpenID4VP",
+      "pages": [
+        "oid4vci/introduction",
+        "changelogs/oid4vci/changelog",
+        {
+          "group": "OpenID for VCI Client",
+          "pages": ["oid4vci/client/introduction", "oid4vci/client/development"]
+        },
+        {
+          "group": "OpenID for VCI Issuer",
+          "pages": ["oid4vci/issuer/introduction", "oid4vci/issuer/development"]
+        },
+        {
+          "group": "SIOP-OpenID4VP",
+          "pages": [
+            "oid4vci/siop-oid4vp/introduction", 
+            "oid4vci/siop-oid4vp/steps",
+            "oid4vci/siop-oid4vp/op-an-rp-setup",
+            "oid4vci/siop-oid4vp/authorization",
+            "oid4vci/siop-oid4vp/interactions"
+          ]
+        }
+      ]
+    },
+    {
+      "group": "Well Known DID client",
+      "pages": [
+        "wellknown-did-client/introduction",
+        "wellknown-did-client/development",
+        "changelogs/wellknown-did-client/changelog"
+      ]
+    },
+    {
+      "group": "PEX",
+      "pages": [
+        "pex/introduction",
+        "pex/development",
+        "pex/api",
+        "pex/migration",
+        "changelogs/pex/changelog"
+      ]
+    },
+    {
+      "group": "Mobile Wallet",
+      "pages": [
+        "mobile-wallet/introduction",
+        "mobile-wallet/onboarding",
+        "mobile-wallet/development",
+        "mobile-wallet/receiving-credentials",
+        "mobile-wallet/sharing-credentials",
+        "changelogs/mobile-wallet/changelog"
       ]
     },
     {
       "group": "API Documentation",
-      "pages": [
-        "api-reference/introduction"
-      ]
+      "pages": ["api-reference/introduction"]
     },
     {
       "group": "Endpoint Examples",
@@ -81,11 +136,24 @@
         "api-reference/endpoint/create",
         "api-reference/endpoint/delete"
       ]
+    },
+    {
+      "group": "Examples",
+      "pages": [
+        "essentials/markdown",
+        "essentials/code",
+        "essentials/images",
+        "essentials/settings",
+        "essentials/navigation",
+        "essentials/reusable-snippets",
+        "quickstart",
+        "development"
+      ]
     }
   ],
   "footerSocials": {
-    "x": "https://x.com/mintlify",
-    "github": "https://github.com/mintlify",
-    "linkedin": "https://linkedin.com/company/mintlify"
+    "x": "https://x.com/sphereon",
+    "github": "https://github.com/Sphereon-Opensource",
+    "linkedin": "https://www.linkedin.com/company/sphereon"
   }
 }

@@ -1,0 +1,53 @@
+---
+title: 'Development'
+---
+
+## Requirements
+
+This library has the following minimal requirements:
+
+Java 11 and higher (tested up to Java 17) for the build is required. At runtime Kotlin and Java can be used currently
+
+Gradle 7.X and higher;
+
+<Warning>
+We strongly recommend using the latest available version of JDK, in order to have the most recent security fixes and cryptographical algorithm
+updates.
+Before processing the integration steps, please ensure you have successfully installed Maven and JVM with a required version.
+</Warning>
+
+## Adding as Maven dependency
+
+The simplest way to include DSS to your Maven project is to add a repository into the pom.xml file in the root directory of your project as following:
+
+````xml
+
+<project>
+  <repositories>
+
+    .....
+
+    <repository>
+      <id>sphereon-public</id>
+      <name>Sphereon Public</name>
+      <url>https://nexus.qa.sphereon.com/repository/sphereon-public/</url>
+    </repository>
+  </repositories>
+
+  <dependencies>
+
+    ....
+
+    <dependency>
+      <groupId>com.sphereon.vdx</groupId>
+      <artifactId>eidas-signature-client-jvm</artifactId> <!-- The Java implementation if this library -->
+      <version>0.9.1</version>
+    </dependency>
+  </dependencies>
+</project>
+````
+
+## Gradle build (local maven repo)
+```shell
+	gradlew clean publishToMavenLocal
+```

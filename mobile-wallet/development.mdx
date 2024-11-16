@@ -1,0 +1,98 @@
+---
+title: 'Development'
+---
+
+<Tip>
+SSI Wallet uses Expo SDK v48 and React-Native v0.71.
+
+- Node v20.x.x
+- Expo CLI v6.0.1 or above
+- Yarn
+</Tip>
+
+## Utility scripts
+
+There are several other utility scripts that help with development.
+
+- `yarn fix:lint` - runs `eslint --fix` to fix code style.
+- `yarn fix:prettier` - runs `prettier --write` to fix code style.
+
+
+### Node
+
+Use a nvm (Node Version Manager) or directly install a LTS version of NodeJS. The version of NodeJS should be 18.x.x
+which is required for RN 0.71 to work. The app is not guaranteed to work with higher Node versions and it will
+certainly not work with lower Node versions.
+
+Use <code>nvm list available</code> to list the available versions of Node.
+
+Then install and make it the default. Please ensure you have proper permissions. On Windows this can mean running the
+command prompt or powershell as administrator!
+
+Example:
+
+```shell
+nvm install 20
+nvm use 20
+```
+
+You can use the following command to check the node version.
+
+```shell
+nvm current
+```
+
+<b>NOTE</b>: After installation be sure to close the terminal window. If installed from your IDE, be sure to close the
+IDE and start it (do not restart, as it might not pick up the latest environment variables)
+
+### Yarn
+
+We use Yarn as package manager. Install it with the following command:
+
+```shell
+npm install --global yarn
+```
+
+<b>NOTE</b>: After installation be sure to close the terminal window. If installed from your IDE, be sure to close the
+IDE and start it (do not restart, as it might not pick up the latest environment variables)
+
+## Starting the SSI-Wallet
+
+The SSI-Wallet can be started by running one of the following commands.
+
+### Android
+
+```shell
+expo android:start
+```
+
+For Android you need to make sure that your wallet is connect using a USB cable and that developer options are enabled.
+If you do not connect the phone using USB it will start the Android emulator instead
+
+By default, it uses port 8081.
+
+- Ensure your phone and your development computer are on the same (Wi-Fi) network.
+- Ensure you phone is connected via USB
+- Ensure the firewall on you computer allows incoming traffic on port 8081.
+
+### iOS
+
+You will have to use Xcode directly for now. We will work on getting the below command working.
+
+```shell
+expo ios:start  // Please note this command currently doesn't work
+```
+
+Run the below commands on the command line to update all dependencies.
+
+```shell
+yarn install
+cd ios
+pod install
+```
+
+In XCode select the `Product -> Run` option from the menu. (If you want to create a archive for instance for TestFlight,
+you can choose `Product -> Archive`).
+It will take some time for the app to start. In some circumstances you might not get directly to the app. If that is the
+case lookup whether the Sphereon Wallet application can be found in you apps. If so start it from there. You should see
+the bundler starting.

@@ -1,0 +1,26 @@
+---
+title: 'From V1 to V2'
+---
+<Warning>Please be aware that this library does not support the latest V2 specification!. Support will be added as
+part of a V3 major version of this library</Warning>
+
+The following changes has been made in the v2 version of the Presentation Exchange specification. V1 is still the most
+predominant version, because it is typically used quite a bite in OpenID4VC scenarios and interop profiles.
+
+**1**:  The required `schema` has been removed altogether from `InputDescriptor` properties, because it was confusing and
+   redundant.
+
+**2**:  `presentation_definition` has another property called `frame` and if present, its value MUST be a JSON LD Framing
+   Document object. Used for selective disclosure. Although this library does not use it currently, as we can perform it
+   without frames.
+
+**3**:  `filter` has several more options for filtering:
+    - formatMaximum
+    - formatMinimum
+    - formatExclusiveMaximum
+    - formatExclusiveMinimum
+
+As a result we introduced the `PEX` class to replace the former `PEJS` class. This class does feature detection on the
+presentation definition to determine whether it is a v1 or v2 spec. Then it delegates the functionality to the PEXv1 or
+PEXv2 class respectively. See also: [v0.6 Breaking changes](#breaking-change-class-and-package-renamed-as-of-v060)
+

@@ -1,0 +1,25 @@
+---
+title: Introduction
+description: 'The wellknown-dids-client is a library to create DID configuration resources and domain linkage credentials and to be able to verify these conforming to the DIF [spec for well-known DID Configurations](https://identity.foundation/.well-known/resources/did-configuration/) 
+It is written in Typescript and can be compiled to any target JavaScript version.'
+---
+
+  <img className="block dark:hidden" src="/logo/light.svg" alt="Sphereon" />
+  <img className="hidden dark:block" src="/logo/dark.svg" alt="Sphereon" />
+
+
+[![CI](https://github.com/Sphereon-Opensource/wellknown-did-client/actions/workflows/main.yaml/badge.svg)](https://github.com/Sphereon-Opensource/wellknown-did-client/actions/workflows/main.yaml)  [![codecov](https://codecov.io/gh/Sphereon-Opensource/wellknown-did-client/branch/develop/graph/badge.svg?token=N7DH65LYDU)](https://codecov.io/gh/Sphereon-Opensource/wellknown-did-client) [![NPM Version](https://img.shields.io/npm/v/@sphereon/wellknown-dids-client.svg)](https://npm.im/@sphereon/wellknown-dids-client)
+
+### Supported actions
+ * Creating a DID configuration resource.
+ * Creating a domain linkage credential.
+ * Verifying domain linkage based on a DID document.
+ * Verifying an endpoint descriptor.
+ * Verifying a DID configuration resource (option for remote possible).
+ * Verifying a domain linkage credential (JWT or JSONLD).
+
+### Requirements
+#### Well-Known DID issuer
+For the well-known DID issuer, an issue callback is required that does the actual issuing of the credential. This can be supplied by using a config to the issuer or as a parameter to the functions.
+#### Well-Known DID verifier
+For the well-known DIr verifier, a verification callback is required that does the signature verification of the credential. This can be supplied by using a config to the issuer or as a parameter to the functions.

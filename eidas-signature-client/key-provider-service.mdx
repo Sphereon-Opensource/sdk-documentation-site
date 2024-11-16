@@ -1,0 +1,385 @@
+---
+title: 'Key Provider Service'
+---
+
+The Key Provider Service allows to manage public/private keys and Certificates using either a PKCS#12 keystore file as byte array or filepath.
+It also
+has support for PKCS#11 hardware (HSM and USB cards) as well as support for a Remote REST Key Provider and a Azure Keyvault/Managed HSM
+Key Provider. Next to certificate/key management a Key Provider also is responsible for creating and verifying signatures themselves.
+Other operations, like creating a hash, merging a signature into an input document are handled by a Signature Service instead of the Key
+Provider. A Single Key Provider can be shared by different Signature Services, as explained [above](/eidas-signature-client/introduction#signature-flow)
+
+Given the wide range of supported import/creation methods, this library does not create or
+import keys/certificates. The REST API does have support for it. Please use your method of choice (
+see [below](#use-existing-tooling-to-create-a-certificate-and-keystore) for some pointers).
+
+## PKCS\#12 Keystore Key Provider Service
+
+The below example in Kotlin sets up a Key Provider Service using a PKCS#12 keystore file at a certain path
+
+````kotlin kotlin
+val providerPath = "path/to/pkcs12.p12"
+val passwordInputCallback = PasswordInputCallback(password = "password".toCharArray())
+val providerConfig = KeyProviderConfig(
+    type = KeyProviderType.PKCS12,
+    pkcs12Parameters = KeystoreParameters(providerPath)
+)
+val keyProvider = KeyProviderService(
+    KeyProviderSettings(
+        id = "my-pkcs12-provider",
+        providerConfig,
+        passwordInputCallback
+    )
+)
+````
+
+### Use existing tooling to create a certificate and PKCS\#12 keystore
+
+How to generate and/or import X.509 certificates and PKCS#12 keystores is out of scope of this project, but we provide some hints below. There are
+numerous resources on the internet to create X.509 certificates and PKCS#12 keystores.
+
+#### Creating a PKCS\#12 keystore using OpenSSL
+
+The private key and certificate must be in Privacy Enhanced Mail (PEM) format (for example, base64-encoded
+with ``----BEGIN CERTIFICATE---- and ----END CERTIFICATE----`` headers and footers).
+
+Use the following OpenSSL commands to create a PKCS#12 file from your private key and certificate. If you have one certificate, use the CA root
+certificate.
+
+````
+openssl pkcs12 -export -in <signed_cert_filename> -inkey <private_key_filename> -name ‘tomcat’ -out keystore.p12
+````
+
+If you have a chain of certificates, combine the certificates into a single file and use it for the input file, as shown below. The order of
+certificates must be from server certificate to the CA root certificate.
+
+See RFC 2246 section 7.4.2 for more information about this order.
+
+````
+cat <signed_cert_filename> <intermediate.cert> [<intermediate2.cert>] > cert-chain.txt
+openssl pkcs12 -export -in cert-chain.txt -inkey <private_key_filename> -name ‘tomcat’ -out keystore.p12
+````
+
+When prompted, provide a password for the new keystore.
+
+## PKCS\#11 Hardware Security Module and Card based Key Provider Service
+
+The PKCS#11 Key Provider allows you to use Hardware Security Based solutions that can interact using a PKCS#11 interface. It needs access to
+the driver library in order to operate.
+
+````kotlin kotlin
+val passwordInputCallback = PasswordInputCallback(password = "password".toCharArray())
+val providerConfig = KeyProviderConfig(
+    type = KeyProviderType.PKCS11,
+    pkcs11Parameters = Pkcs11Parameters(
+        pkcs11LibraryPath = "/usr/lib/opensc-pkcs11.so", // The PKCS11 driver path
+        slotId = 0,
+        slotListIndex = 2
+    )
+)
+val keyProvider = KeyProviderService(
+    KeyProviderSettings(
+        id = "my-pkcs11-provider",
+        providerConfig,
+        passwordInputCallback
+    )
+)
+````
+
+````kotlin kotlin
+class Pkcs11Parameters(
+    /** The path to the library  */
+    val pkcs11LibraryPath: String? = null,
+
+    /** The callback to enter a password/pincode  */
+    val callback: PasswordInputCallback? = null,
+
+    /** The slot Id to use  */
+    val slotId: Int? = 0,
+
+    /** The slot list index to use  */
+    val slotListIndex: Int? = -1,
+
+    /** Additional PKCS11 config  */
+    val extraPkcs11Config: String? = null
+)
+
+````
+
+## Azure Keyvault or Managed HSM Key Provider Service
+
+An Azure Keyvault Key Provider uses Azure Keyvault and Azure Managed HSM to retrieve certificates, create the Signature and verify a
+signature.
+The below example in Kotlin sets up a Key Provider Service using Azure Keyvault or Azure Managed HSM. Both Keyvault and Managed HSM support Hardware
+Security Modules. The Managed HSM service is Microsoft's solution for an HSM not shared with other customers/tenants.
+
+**Note:** _Although the Azure Key Provider should work with Azure Managed HSM, the library is not being tested against Azure Managed HSM, as
+opposed to Azure Keyvault._
+
+````kotlin kotlin
+val providerConfig = KeyProviderConfig(
+    type = KeyProviderType.AZURE_KEYVAULT
+)
+val keyvaultConfig = AzureKeyvaultClientConfig(
+    keyvaultUrl = "https://your-keyvault-here.vault.azure.net/",
+    tenantId = "<your-directory-id-as-shown-in-keyvault-properties>",
+    credentialOpts = CredentialOpts(
+        credentialMode = CredentialMode.SERVICE_CLIENT_SECRET, // Use a client id and secret to authenticate as an app
+        secretCredentialOpts = SecretCredentialOpts(
+            clientId = "<client id which has access to keyvault>",
+            clientSecret = "<client secret belonging to client id>"
+        )
+    ),
+    hsmType = HSMType.KEYVAULT, // Either KEYVAULT as HSM (FIPS140 Level-2), or MANAGED_HSM
+    applicationId = "your-application-id-or-name", // This can be randomly choosen
+    exponentialBackoffRetryOpts = ExponentialBackoffRetryOpts(
+        maxTries = 10, // let's try max 10 times
+        baseDelayInMS = 500, // Wait 0,5 seconds the first time
+        maxDelayInMS = 15000 // Wait for max 15 seconds eventually
+    )
+)
+
+val providerSettings = KeyProviderSettings(
+    id = "my-keyvault-provider",
+    providerConfig
+)
+
+// From a factory
+var keyProvider = KeyProviderServiceFactory.createFromConfig(settings = providerSettings, azureKeyvaultClientConfig = keyvaultConfig)
+
+
+// Or directly:
+keyProvider = AzureKeyvaultKeyProviderService(providerSettings, keyvaultConfig)
+````
+
+## REST Key Provider
+
+The REST Key Provider uses REST to get Keys/Certificates It also exposes the createSignature and verifySignature methods as REST endpoints.
+Lastly other methods like creating a digest, determineSignInput and placing the signature in the original document could also be executed remotely if
+desired. This is however handled by the RESTClientSignatureService.
+
+### Authentication and Authorization support
+
+The REST Key Provider has OAuth2, OpenID Connect and bearer token support integrated.
+
+#### OAuth2 support
+
+The REST Key Provider client has support for oAuth2 and by extension OpenID Connect. Access to the OAuth2 functionality can be
+achieved by
+invoking the `oauth()` method on the REST Key Provider after providing the appropriate configuration:
+
+````kotlin kotlin
+val keyProviderSettings = KeyProviderSettings(
+    id = "rest-oauth2",
+    config = KeyProviderConfig(
+        cacheEnabled = true,
+        type = KeyProviderType.REST,
+    )
+)
+val restConfig = RestClientConfig(
+    baseUrl = "https://example.rest.service/signature/1.0",
+    oauth2 = OAuth2Config(
+        tokenUrl = "https://example.auth-server.com/auth/realms/sign-test/protocol/openid-connect/token",
+        flow = OAuthFlow.APPLICATION,       // Use a clientId/clientSecret
+        scope = "sign:vdx_sign_cert",       // Request scope, see scope chapter below
+        clientId = "<client-id>",           // Provided by the IDP administrator
+        clientSecret = "<client-secret>",   // Provided by the IDP administrator
+        accessToken = "ey...."              // Typicaly should not be included. Can be used instead of clientId/secret when a static token is being used for instance
+    )
+)
+
+val restKeyProvider = RestClientKeyProviderService(keyProviderSettings, restConfig)
+// Use the respective methods to get certificate or sign at this point. It will use oAuth2 to request a token and refresh tokens
+
+// If oauth2 access is needed the oauth() method can be used. For instance to renew the access token
+restKeyProvider.oauth().renewAccessToken()
+
+// From this point on requests will use the new token
+````
+
+#### Bearer Token and JWT support
+
+The REST Key Provider client has support to include bearer tokens (JWTs) in the authentication header. Access to the JWT functionality can be
+achieved by
+invoking the bearerAuth() method on the REST Key Provider after providing the appropriate configuration:
+
+````kotlin kotlin
+val keyProviderSettings = KeyProviderSettings(
+    id = "rest-bearer",
+    config = KeyProviderConfig(
+        cacheEnabled = true,
+        type = KeyProviderType.REST,
+    )
+)
+val restConfig = RestClientConfig(
+    baseUrl = "https://example.rest.service/signature/1.0",
+    bearerAuth = BearerTokenConfig(
+        schema = "bearer", // Can be omitted as it is the default
+        bearerToken = "ey.....ffd" // Usefull to set an initial token or when the token is static
+    )
+)
+
+val restKeyProvider = RestClientKeyProviderService(keyProviderSettings, restConfig)
+// Use the respective methods to get certificate or sign at this point. It will use the bearer token in every request
+
+// If the bearer token needs to be updated
+restKeyProvider.bearerAuth().bearerToken = "ey.....<updated.bearer.token>..."
+
+// From this point on requests will use the new token
+````
+
+#### OAuth2, OpenID Scopes
+
+The REST Microservice can be configured to support scopes. It is supported for both OAuth2 and OpenID Connect. Scopes are optional and when enabled,
+protect the API endpoints from users not having access to a certain scope at an endpoint level.
+
+The available scopes are:
+
+- **read:vdx_sign_key**:    Read/List keys
+- **admin:vdx_sign_key**:   Administer keys
+- **sign:vdx_sign_key**:    Sign using keys
+- **read:vdx_sign_config**:  Read configurations
+- **admin:vdx_sign_config**: Create and update configurations
+
+Please note that this doesn't provide protection at an individual configuration nor key level. For these there is role support. The eIDAS REST
+MS documentation provides more info on this subject.
+
+To enable scopes, you have to use your IAM solution of choice which supports oAuth2 or OpenID Connect and ensure that the appropriate scopes are
+requested from the IAM solution. How this works is different per IAM and outside the scope of this README.
+
+The REST Key Provider can set the scopes before requesting the tokens using the configuration as shown [above](#oauth2-support). You can also
+programmatically set the scopes:
+
+````kotlin kotlin
+restKeyProvider.oauth().setScope("sign:vdx_sign_cert")
+````
+
+#### Roles support
+
+The REST Microservice has role based support. It is possible to define roles on individual configurations as well as individual keys. Meaning
+you can define which roles and thus users/groups can access and administer certain signing configurations, as well as which users/groups can sign
+using a particular key. This is more fine-grained than using the scopes above. Of course both could be used together if desired. The use of
+roles is explained in the Micro Service documentation. How roles should be made available to the JWT/bearer tokens is outside the scope of this
+README.
+
+## Key Provider caching
+
+Especially for remote Key Providers like the REST, Azure and PKCS#11 Key Providers it might make sense to enable Key/Certificate
+caching. This means that a key which has been retrieved recently and which has not hit the configured Time to Live yet, will be returned from the
+local cache, improving performance. Please be aware that this library is not involved in updating or replacing keys as these are highly implementation
+specific. As such providing a really high TTL could return a stale Key/Certificate if the Key had been replaced for a certain kid value. Given
+keys/certificates are not replaced that often in practice this shouldn't be too much of a problem. Please note that the actual signing using a
+key/certificate is rarely done using a cached key/certificate itself, given the private key is seldomly included. The `createSignature` method
+typically isn't involved in the caching mechanism.
+
+````kotlin kotlin
+CertProviderConfig(
+    cacheEnabled = true, // Enable caching of keys/certificates. Requires a JSR107 Cache implementation on the classpath! */
+    cacheTTLInSeconds = 600, // How long in seconds should keys be kept in the cache since last access. Default: 5 min
+)
+````
+
+## List keys, certificates
+
+To list all available keys of the provider one can use the getKeys() method. A list of IKeyEntry objects is being returned. The interface does
+not expose private keys, as developers typically should not access the private key directly and not every supported implementation gives access to
+private keys. If you are sure that key contains private keys, you can cas the result to IPrivateKeyEntry.
+
+````kotlin kotlin
+val keys = keyProvider.getKeys()
+println(Json { prettyPrint = true; serializersModule = serializers }.encodeToString(keys))
+````
+
+````json json
+[
+  {
+    "type": "PrivateKeyEntry",
+    "kid": "test-key",
+    "privateKey": {
+      "algorithm": "RSA",
+      "value": "MIIJRAIBAD....lpe53o2VXP",
+      "format": "PKCS#8"
+    },
+    "encryptionAlgorithm": "RSA",
+    "certificate": {
+      "value": "MIIE...ybsgEkgc="
+    },
+    "certificateChain": [
+      {
+        "value": "MIIE...ybsgEkgc="
+      }
+    ]
+  }
+]
+````
+
+## Get a key/certificate by kid
+
+Use the geKey(kid: String) method to get a single key IKeyEntry object by kid if it exists. If it does not exist null is being returned.
+The IKeyEntry interface does not expose private keys, as developers typically should not access the private key directly and not every supported
+implementation gives access to private keys. If you are sure that the key entry contains private keys, you can cast the result to IPrivateKeyEntry.
+Make sure to
+never sent private keys across unprotected network connections!
+
+````kotlin kotlin
+val key = keyProvider.getKey("test-key")
+println(Json { prettyPrint = true; serializersModule = serializers }.encodeToString(key))
+````
+
+````json json
+  {
+  "type": "PrivateKeyEntry",
+  "kid": "test-key",
+  "privateKey": {
+    "algorithm": "RSA",
+    "value": "MIIJRAIBAD....lpe53o2VXP",
+    "format": "PKCS#8"
+  },
+  "encryptionAlgorithm": "RSA",
+  "certificate": {
+    "value": "MIIE...ybsgEkgc="
+  },
+  "certificateChain": [
+    {
+      "value": "MIIE...ybsgEkgc="
+    }
+  ]
+}
+````
+
+## Create the signature
+
+Depending on the Key Provider this method could be traversing the network as it might call a signature REST API, or use a
+network/cloud based Hardware Security Module containing the private key to sign. As such we advise to create the digest hash using a SignatureService
+beforehand so original
+documents/data is not being sent. Only the hash digest will traverse the network.
+
+````kotlin kotlin
+val signature = keyProvider.createSignature(digestInput, keyEntry)
+println(Json { prettyPrint = true; serializersModule = serializers }.encodeToString(signature))
+````
+
+````json json
+{
+  // The actual signature
+  "value": "SoSsp+Mut3....XEDqEVw==",
+  "algorithm": "RSA_SHA256",
+  "signMode": "DIGEST",
+  // The certificate used during signing
+  "certificate": {
+    "value": "MIID1D....6Q42vNaS"
+  },
+  // The certificate chain including the Certificate Authority (CA) last
+  "certificateChain": [
+    {
+      "value": "MIID1D....6Q42vNaS"
+    },
+    {
+      "value": "MIID6j....GePoU8Ug=="
+    },
+    {
+      "value": "MIIDVzC....PSNfsSBog=="
+    }
+  ]
+}
+````
