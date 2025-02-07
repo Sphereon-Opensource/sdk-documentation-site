@@ -1,6 +1,6 @@
 {
   "$schema": "https://mintlify.com/schema.json",
-  "name": "Docs",
+  "name": "Documentation",
   "logo": {
     "dark": "/logo/dark.svg",
     "light": "/logo/light.svg"
@@ -27,8 +27,14 @@
   },
   "tabs": [
     {
-      "name": "API Reference",
-      "url": "api-reference"
+      "name": "Concepts",
+      "url": "concepts"
+    },
+    {
+      "isDefaultHidden": true,
+      "name": "OID4VCI",
+      "url": "oid4vci-api-reference",
+      "openapi": "/oid4vc/oid4vci/issuer/api-reference/openapi.json"
     },
     {
       "name": "Changelogs",
@@ -37,7 +43,7 @@
   ],
   "anchors": [
     {
-      "name": "Work",
+      "name": "Job openings",
       "icon": "user",
       "url": "https://sphereon.com/blockchain-job-openings-at-sphereon/"
     },
@@ -55,8 +61,76 @@
     {
       "group": "SSI SDK",
       "pages": [
+        "agent/demo-agent-setup",
         "changelogs/ssi-sdk/general",
-        "changelogs/ssi-sdk/pd-manager-rest-api"
+        "changelogs/ssi-sdk/pd-manager-rest-api",
+        "concepts/DIDs"
+      ]
+    },
+    {
+      "group": "OID4VC",
+      "pages": [
+        "oid4vc/introduction",
+        "changelogs/oid4vc/changelog",
+
+        {
+          "group": "OID4VCI Issuer",
+          "pages": ["oid4vc/oid4vci/issuer/introduction", "oid4vc/oid4vci/issuer/REST", {
+            "group": "OpenAPI",
+            "pages": [
+              "oid4vc/oid4vci/issuer/api-reference/backend/create-credential-offer",
+              "oid4vc/oid4vci/issuer/api-reference/backend/get-credential-issuance-status",
+              "oid4vc/oid4vci/issuer/api-reference/backend/get-credential-offer"
+            ]
+          },"oid4vc/oid4vci/credential-branding", "oid4vc/oid4vci/issuer/development"]
+        },
+        {
+          "group": "OID4VCI Client",
+          "pages": ["oid4vc/oid4vci/client/introduction", "oid4vc/oid4vci/client/usage"]
+        },
+        {
+          "group": "OID4VP & SIOPv2",
+          "pages": [
+            "oid4vc/siop-oid4vp/introduction",
+            "oid4vc/siop-oid4vp/steps",
+            "oid4vc/siop-oid4vp/op-an-rp-setup",
+            "oid4vc/siop-oid4vp/authorization",
+            "oid4vc/siop-oid4vp/interactions"
+          ]
+        }
+      ]
+    },
+    {
+      "group": "Presentation Exchange",
+      "pages": [
+        "pex/introduction",
+        "pex/development",
+        "pex/api",
+        "pex/migration",
+        "changelogs/pex/changelog"
+      ]
+    },
+    {
+      "group": "W3C VC API",
+      "pages": [
+        "w3c/vc-api/api"
+      ]
+    },
+    {
+      "group": "DIF Universal Resolver+Registrar",
+      "pages": [
+        "dif/universal-resolver-registrar"
+      ]
+    },
+    {
+      "group": "Mobile Wallet",
+      "pages": [
+        "mobile-wallet/introduction",
+        "mobile-wallet/onboarding",
+        "mobile-wallet/development",
+        "mobile-wallet/receiving-credentials",
+        "mobile-wallet/sharing-credentials",
+        "changelogs/mobile-wallet/changelog"
       ]
     },
     {
@@ -72,57 +146,11 @@
       ]
     },
     {
-      "group": "OpenID4VP",
-      "pages": [
-        "oid4vci/introduction",
-        "changelogs/oid4vci/changelog",
-        {
-          "group": "OpenID for VCI Client",
-          "pages": ["oid4vci/client/introduction", "oid4vci/client/development"]
-        },
-        {
-          "group": "OpenID for VCI Issuer",
-          "pages": ["oid4vci/issuer/introduction", "oid4vci/issuer/development"]
-        },
-        {
-          "group": "SIOP-OpenID4VP",
-          "pages": [
-            "oid4vci/siop-oid4vp/introduction", 
-            "oid4vci/siop-oid4vp/steps",
-            "oid4vci/siop-oid4vp/op-an-rp-setup",
-            "oid4vci/siop-oid4vp/authorization",
-            "oid4vci/siop-oid4vp/interactions"
-          ]
-        }
-      ]
-    },
-    {
       "group": "Well Known DID client",
       "pages": [
         "wellknown-did-client/introduction",
         "wellknown-did-client/development",
         "changelogs/wellknown-did-client/changelog"
-      ]
-    },
-    {
-      "group": "PEX",
-      "pages": [
-        "pex/introduction",
-        "pex/development",
-        "pex/api",
-        "pex/migration",
-        "changelogs/pex/changelog"
-      ]
-    },
-    {
-      "group": "Mobile Wallet",
-      "pages": [
-        "mobile-wallet/introduction",
-        "mobile-wallet/onboarding",
-        "mobile-wallet/development",
-        "mobile-wallet/receiving-credentials",
-        "mobile-wallet/sharing-credentials",
-        "changelogs/mobile-wallet/changelog"
       ]
     },
     {

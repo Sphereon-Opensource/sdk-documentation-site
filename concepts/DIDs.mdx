@@ -1,0 +1,126 @@
+# DID Introduction
+
+## W3C specification
+
+Decentralized identifiers are a recommended [W3C specification](https://www.w3.org/TR/did-core/).
+The abstract of the [spec](https://www.w3.org/TR/did-core/) reads:
+> Decentralized identifiers (DIDs) are a new type of identifier that enables verifiable, decentralized digital identity.
+> A DID refers to any subject (e.g., a person, organization, thing, data model, abstract entity, etc.) as determined by
+> the controller of the DID. In contrast to typical, federated identifiers, DIDs have been designed so that they may be
+> decoupled from centralized registries, identity providers, and certificate authorities. Specifically, while other
+> parties might be used to help enable the discovery of information related to a DID, the design enables the controller
+> of
+> a DID to prove control over it without requiring permission from any other party. DIDs are URIs that associate a DID
+> subject with a DID document allowing trustable interactions associated with that subject.
+
+So contrary to an ID being created and stored somewhere in a database of a Vendor providing a user or subject a certain
+service, one of the key points is that a DID is being created and maintained by the user/subject itself. Using a DID
+typically means public/private key-pairs are being used. Where the private key(s) are in control of the different
+parties using DIDs.
+
+## DID vs DID Document
+
+A DID is an unique [URI](https://en.wikipedia.org/wiki/Uniform_Resource_Identifier), similar to an URL for a website in
+your browser.
+
+![DID](/img/concepts/did.png)
+
+The DID Method is used to point to the actual DID specification implementation. There are currently more than 100
+different implementations. See [DID method evaluation](#did-method-evaluation) for more information. The DID
+Method-specific Identifier is a unique identifier for the specific DID method. The DID Method in question defines how
+these method specific identifiers are being created.
+
+A DID can be resolved to a so called DID Document. DID Documents do not contain any Personally Identifiable
+Information (PII), claims or credentials. A DID contains public keys plus optional service URLs. This enables them to be
+public, shareable, and portable, and provide references for further identity interaction, while preserving privacy.
+
+**Example DID Document:**
+
+````json
+ {
+  "@context": [
+    "https://www.w3.org/ns/did/v1",
+    "https://w3id.org/security/suites/ed25519-2020/v1"
+  ],
+  "id": "did:example:123",
+  "authentication": [
+    {
+      "id": "did:example:123#z6MkecaLyHuYWkayBDLw5ihndj3T1m6zKTGqau3A51G7RBf3",
+      "type": "Ed25519VerificationKey2020",
+      // external (property value)
+      "controller": "did:example:123",
+      "publicKeyMultibase": "zAKJP3f7BD6W4iWEQ9jwndVTCBq8ua2Utt8EEjJ6Vxsf"
+    }
+  ],
+  "capabilityInvocation": [
+    {
+      "id": "did:example:123#z6MkhdmzFu659ZJ4XKj31vtEDmjvsi5yDZG5L7Caz63oP39k",
+      "type": "Ed25519VerificationKey2020",
+      // external (property value)
+      "controller": "did:example:123",
+      "publicKeyMultibase": "z4BWwfeqdp1obQptLLMvPNgBw48p7og1ie6Hf9p5nTpNN"
+    }
+  ],
+  "capabilityDelegation": [
+    {
+      "id": "did:example:123#z6Mkw94ByR26zMSkNdCUi6FNRsWnc2DFEeDXyBGJ5KTzSWyi",
+      "type": "Ed25519VerificationKey2020",
+      // external (property value)
+      "controller": "did:example:123",
+      "publicKeyMultibase": "zHgo9PAmfeoxHG8Mn2XHXamxnnSwPpkyBHAMNF3VyXJCL"
+    }
+  ],
+  "assertionMethod": [
+    {
+      "id": "did:example:123#z6MkiukuAuQAE8ozxvmahnQGzApvtW7KT5XXKfojjwbdEomY",
+      "type": "Ed25519VerificationKey2020",
+      // external (property value)
+      "controller": "did:example:123",
+      "publicKeyMultibase": "z5TVraf9itbKXrRvt2DSS95Gw4vqU3CHAdetoufdcKazA"
+    }
+  ]
+}
+````
+
+## Cryptographic material
+
+The [W3C spec](https://www.w3.org/TR/did-core/) reads:
+> Each DID document can express cryptographic material, verification methods, or services, which provide a set of
+> mechanisms enabling a DID controller to prove control of the DID. Services enable trusted interactions associated with
+> the DID subject. A DID might provide the means to return the DID subject itself, if the DID subject is an information
+> resource such as a data model.
+
+
+
+
+Verifiable Credentials allow flexible methods for identifying the issuer, the subject, and holder. The identifier data
+type is a URI, which can be a web page, a decentralized identifier (DID), etc. Most of the example code in the
+documentation and sample implementation use DIDs.
+
+A commonly encountered DID method during testing is [`did:key`](https://w3c-ccg.github.io/did-method-key/), which is a
+scheme for representing offchain and offline key material as a DID based
+on [the `multicodec` registry](https://github.com/multiformats/multicodec/blob/master/table.csv)),
+and [`did:web`](https://w3c-ccg.github.io/did-method-web/), a simplified resolution mechanism for using a well-known DNS
+domain as root of trust for self-publishing DID documents.
+
+`did:key` and `did:jwk` do not support key rotation, which is sometimes a desired DID method characteristic,
+especially for issuers. It also does not support so called services, which sometimes are needed.
+A simple option for issuers with long-standing web domains and established processes for pushing
+updates is to use `did:web`.
+
+## DID Method Evaluation
+
+There are a large number of DID methods, some of which are based on blockchains, some based on web pages, and some
+purely generative. Some may support a complete range of DID operations like create, update, deactivate and others (like did:key) may not.
+
+In general, DID method options will be influenced by a broader set of criteria relevant to all roles in the VC
+ecosystem. A comprehensive consideration of which is available in
+the [DID Method Rubric](https://w3c.github.io/did-rubric).
+
+We Currently directly supports the following DID methods:
+
+- web
+- key
+- jwk
+- ebsi
+- oyd
