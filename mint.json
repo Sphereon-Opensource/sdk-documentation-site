@@ -31,6 +31,10 @@
       "url": "concepts"
     },
     {
+      "name": "Examples and exercises",
+      "url": "exercises"
+    },
+    {
       "isDefaultHidden": true,
       "name": "OID4VCI",
       "url": "oid4vci-api-reference",
@@ -56,7 +60,9 @@
   "navigation": [
     {
       "group": "Get Started",
-      "pages": ["introduction"]
+      "pages": [
+        "introduction"
+      ]
     },
     {
       "group": "SSI SDK",
@@ -72,21 +78,30 @@
       "pages": [
         "oid4vc/introduction",
         "changelogs/oid4vc/changelog",
-
         {
           "group": "OID4VCI Issuer",
-          "pages": ["oid4vc/oid4vci/issuer/introduction", "oid4vc/oid4vci/issuer/REST", {
-            "group": "OpenAPI",
-            "pages": [
-              "oid4vc/oid4vci/issuer/api-reference/backend/create-credential-offer",
-              "oid4vc/oid4vci/issuer/api-reference/backend/get-credential-issuance-status",
-              "oid4vc/oid4vci/issuer/api-reference/backend/get-credential-offer"
-            ]
-          },"oid4vc/oid4vci/credential-branding", "oid4vc/oid4vci/issuer/development"]
+          "pages": [
+            "oid4vc/oid4vci/issuer/introduction",
+            "oid4vc/oid4vci/issuer/REST",
+            {
+              "group": "OpenAPI",
+              "pages": [
+                "oid4vc/oid4vci/issuer/api-reference/backend/create-credential-offer",
+                "oid4vc/oid4vci/issuer/api-reference/backend/get-credential-issuance-status",
+                "oid4vc/oid4vci/issuer/api-reference/backend/get-credential-offer"
+              ]
+            },
+            "exercises/oid4vc/oid4vci/credential-offer-exercises",
+            "oid4vc/oid4vci/credential-branding",
+            "oid4vc/oid4vci/issuer/development"
+          ]
         },
         {
           "group": "OID4VCI Client",
-          "pages": ["oid4vc/oid4vci/client/introduction", "oid4vc/oid4vci/client/usage"]
+          "pages": [
+            "oid4vc/oid4vci/client/introduction",
+            "oid4vc/oid4vci/client/usage"
+          ]
         },
         {
           "group": "OID4VP & SIOPv2",
@@ -155,14 +170,8 @@
     },
     {
       "group": "API Documentation",
-      "pages": ["api-reference/introduction"]
-    },
-    {
-      "group": "Endpoint Examples",
       "pages": [
-        "api-reference/endpoint/get",
-        "api-reference/endpoint/create",
-        "api-reference/endpoint/delete"
+        "api-reference/introduction"
       ]
     },
     {

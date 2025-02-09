@@ -3,33 +3,141 @@ title: Introduction
 description: 'OpenID for Verifiable Credential Issuance - Issuer'
 ---
 
-  <img className="block dark:hidden" src="/logo/light.svg" alt="Sphereon" />
-  <img className="hidden dark:block" src="/logo/dark.svg" alt="Sphereon" />
-
-[![CI](https://github.com/Sphereon-Opensource/openid4vci-client/actions/workflows/main.yml/badge.svg)](https://github.com/Sphereon-Opensource/openid4vci-client/actions/workflows/main.yml) [![codecov](https://codecov.io/gh/Sphereon-Opensource/openid4vci-client/branch/develop/graph/badge.svg)](https://codecov.io/gh/Sphereon-Opensource/openid4vci-client) [![NPM Version](https://img.shields.io/npm/v/@sphereon/oid4vci-client.svg)](https://npm.im/@sphereon/oid4vci-client)
-
-<Warning>
-IMPORTANT the OID4VCI packages are still in an early development stage, which means that breaking changes are to be expected
-</Warning>
-
 # Background
 
-The OID4VCI issuer is used in issuer type applications, where an organization is issuing the credential(s)
+The OID4VCI issuer is used in issuer type applications, where an organization is issuing the credential(s),
 
-# Flows
+The Sphereon issuer supports all concepts described below
 
-The spec lists 2 flows. Currently only one is supported!
+<Info>We have [exercises](/exercises/oid4vc/oid4vci/credential-offer-exercises) that progressively let you use the REST API, understanding the process better in each step. You can try these after first reading this page to understand the concepts</Info>
 
-## Authorized Code Flow
+## Credential Offers
 
-This flow isn't supported yet!
+In the OID4VCI Specification (Draft 13), a **Credential Offer** is a mechanism through which an issuer initiates the process of issuing Digital Credentials to a wallet or agent.
+This offer could be delivered either **by value** or **by reference**, depending on the use case and desired communication flow between parties. There are tradeoffs between both
+modes.
 
-## Pre-authorized Code Flow
+### Credential Offer by Value
 
-The pre-authorized code flow assumes the user is using an out-of-band mechanism outside the issuance flow to
-authenticate first.
+In a **by value** approach, the entire credential offer is contained directly within the message received by the wallet. This means the issuer provides all the necessary
+information for retrieving the credential within the same payload—typically in a direct communication, like embedding the offer in a QR code, a deep link, or another transport
+layer. The benefit is that the wallet does not have to access a network resource, which potentially could be an attack vector. Normally another benefit would be that you could use
+it offline as well, but since the OID4VCI specification needs multiple interactions after this step, that benefit is nearly non-existent (there are some use cases imaginable, like
+only having access to an IDP at this point and getting the credential itself later, but these are a bit far-fetched)
 
-The below diagram shows the steps involved in the pre-authorized code flow. Note that wallet inner functionalities (like
-saving VCs) are out of scope for this library.
+#### Advantages:
+
+- **Simpler communication**: No additional lookup steps are required after the offer is received.
+- **Secure communication**: No possibility to intercept network traffic between the QR code and getting the offer.
+- **Far-fetched: Easier to use in offline or limited-network scenarios**: Since the offer is self-contained, no further network requests are needed to access the offer information.
+
+#### Trade-offs:
+
+- **Larger payloads**: If the offer contains extensive information, it can cause bloated data sizes, which makes the QR code harder to scan. With OID4VCI this typically in contrast
+  to OID4VP and SIOPv2 not really a problem.
+
+### Credential Offer by Reference
+
+In a **by reference** approach, the credential offer is represented by a URL pointing to the complete offer that resides on the issuer's server. The wallet
+or agent retrieves the offer data from this reference.
+Although credential offers especially when shown as a QR code are subject to potential hijacking anyway, having URLs makes that more prominent/easy. That
+is why the URLs should have a lot of entropy/randomness and should also not expose real session data/identifier used later in the protocol. That is also the reason why Sphereon
+uses correlationIds. These are only used in the step between link/QR code and the offer URL. After that different session values and nonces are used in the protocol.
+
+#### Advantages:
+
+- **Lightweight initial transport**: Since only a reference (e.g., a URL) is sent, the initial communication payload remains minimal and easy to scan in case of a QR code.
+
+#### Trade-offs:
+
+- **Session hijacking**: See above in the general explanation of by reference
+- **Requires online connectivity**: The wallet/agent must be able to resolve the reference to access the offer.
+- **Increased complexity**: There are additional steps in the process due to the need to retrieve and resolve the reference. This means cleaning up the URL etc.
+- **Far-fetched**: An issuer can track the offer (session) to an IP address of the wallet. This is not a realy good argument, since the issuer will be able to do that later in the
+  flow as well in most cases.
+
+### Configuration IDs and Credential Offers
+
+The specification also supports the use of **configuration_ids** to identify specific credential configurations. These identifiers allow issuers to dynamically tailor the offer
+based on predefined configurations stored on the server. For example:
+
+- A specific **configuration_id** could define the types of credentials available for issuance, any associated policies, or further metadata about the offer.
+
+When issuing credentials:
+
+- A **by value** offer could directly embed a `configuration_id` to pass this data upfront.
+- A **by reference** offer might use the configuration ID as part of the retrieval process, allowing the wallet to resolve the referenced configuration dynamically.
+
+---
+
+## Supported Grants in OID4VCI
+
+OID4VCI supports two grant mechanisms for credential issuance, which align with OAuth 2.0 practices. These are described below:
+
+### 1. Authorization Code Grant Flow
+
+The **Authorization Code Flow** is a robust and secure mechanism that involves user authentication during the credential issuance process. It ensures strong binding between the
+user and the credential through an active user login process.
+
+This is a more complex flow, where the wallet user will authenticate during the issuance process. This provides a better user binding to the credential compared to the other flow.
+Reason is that the user will be authenticating on the device where the wallet resides, using the browser and just before the access token gets retrieved and the credential gets
+retrieved.
+Compared to the flow below, where it is assumed that someone already has logged in and at a later point in time is already authorized to get the credential from the issuer (
+optionally with a transaction/pin code). Especially when used cross device it is easy to see that the Authorization Code flow in a lot of cases is the better choice.
+
+#### Credential catalogue in the wallet
+Although this section is about credential offers, it is good to know that this flow can also work without an actual credential offer. Reason is that wallets can read all the
+credential information from the issuer metadata anyway. Authentication is not happening beforehand in this flow, so as long as an issuer is known the wallet, as wallet could have
+something like a credential catalogue, where the user would be able to select to be issued credentials directly from the wallet, potentially providing a nicer user experience.
+
+#### Flow Overview:
+
+1. The user interacts with the wallet to initiate credential issuance.
+2. The user is redirected to the issuer's Authorization Server, where they authenticate (e.g., via a browser on the same device as the wallet).
+3. An authorization code is returned to the wallet.
+4. The wallet uses this code to request an access token from the token endpoint.
+5. The access token is used to retrieve the credential from the credential endpoint.
+
+#### Benefits:
+
+- **Better user binding**: Users authenticate in real-time during the flow.
+- **Cross-device support**: The user login is well-suited for multi-device scenarios as authentication happens on the device where the wallet resides.
+
+#### Considerations:
+
+- Slightly more complex than the Pre-Authorized Code Flow.
+- Requires user interaction during issuance. This however is also applicable to the other flow as a "proper" pre-authorized code flow should also include a transaction/pin code.
+
+### 2. Pre-Authorized Code Grant Flow
+
+The **Pre-Authorized Code Flow** is used when the user has already authenticated outside of the issuance process. It simplifies the flow by leveraging a pre-authorized code,
+eliminating the need for active authentication during credential issuance. Having said that, whenever a cross-device scenario using QR codes is being used, the QR code should be
+protected
+
+#### Flow Overview:
+
+* The issuer generates a **pre-authorized_code** and shares it with the wallet (e.g., via QR code or deep link).
+* The wallet uses the pre-authorized code directly to retrieve the access token from the token endpoint.
+* The access token is used to fetch the credential from the credential endpoint.
 
 ![Flow diagram](https://www.plantuml.com/plantuml/proxy?cache=no&src=https://raw.githubusercontent.com/Sphereon-Opensource/OID4VCI-client/develop/docs/preauthorized-code-flow.puml)
+
+#### Benefits:
+
+- **Simplicity**: No additional user interaction (e.g., authentication) is needed during the issuance process.
+- **Ideal for constrained environments**: The flow can be performed entirely on a single device or in limited-interaction scenarios.
+
+#### Considerations:
+
+- Weaker user binding compared to the Authorization Code Flow, especially in cross-device scenarios.
+- Relies on secure transmission of the pre-authorized code.
+- Really needs an out-of-band transaction/pincode being send to the user when a QR code is used, so people cannot hijack the session and thus impersonate the user that is already
+  authenticated at this point.
+
+## Specification
+
+The OID4VCI specification provides a secure and flexible framework for issuing Verifiable Credentials through two distinct grant flows and flexible credential offers (by value or
+by reference). The choice of flow and offer method depends on the desired trade-offs between simplicity, security, and dynamic flexibility in the credential issuance process.
+
+For further details and diagrams explaining specific processes, refer to the
+full [OID4VCI Draft 13 specification](https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0-13.html).
