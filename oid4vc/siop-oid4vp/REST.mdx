@@ -1,0 +1,18 @@
+# OID4VP REST API
+
+The Sphereon agent can expose a management REST API for 1 or more OpenID for Realying Party (verifier) instances
+
+
+# Full OpenAPI
+The OpenAPI description of our OID4VCI agent can be found [on our Swaggerhub here](https://app.swaggerhub.com/apis/SphereonInt/OID4VP)
+
+There are 3 endpoint types (tags) of which only the `Backend` and `Definitions` endpoints are important to create an integration into your solution. The other endpoints are used by wallets, which need to conform to the OID4VP specification and thus should automatically be compatible with our implementation (provided that the current draft specification versions are supported by both the wallet and our issuer)
+
+
+# Explanation
+These are requests to request credentials using the OpenID for Verifiable Presentations specification
+You start with creating am Authorization Request URI. It will receive a random correlationId.
+Then you start polling the status endpoint, until the credential(s) are presented as part of one or more presentations or an error has occurred.
+Lastly you can delete the sessions
+
+<Info>We have [exercises](/exercises/oid4vc/siop-oid4vp/oid4vp-exercises) that progressively let you use the REST API, understanding the process better in each step</Info>

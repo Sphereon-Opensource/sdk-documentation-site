@@ -1,77 +1,131 @@
 ---
 title: Introduction
-description: 'Self Issued OpenID Provider (SIOPv2) with OpenID4VP support'
+description: 'OpenID for Verifiable Presentations (OID4VP)'
 ---
 
-An OpenID authentication library conforming to
-the [Self Issued OpenID Provider v2 (SIOPv2)](https://openid.net/specs/openid-connect-self-issued-v2-1_0.html)
-and [OpenID for Verifiable Presentations (OpenID4VP)](https://openid.net/specs/openid-4-verifiable-presentations-1_0.html)
-as specified in the OpenID Connect working group.
+<img className="block dark:hidden" src="/logo/light.svg" alt="Sphereon"/>
+  <img className="hidden dark:block" src="/logo/dark.svg" alt="Sphereon"/>
 
-## Introduction
+# Background
 
-[SIOP v2](https://openid.net/specs/openid-4-verifiable-presentations-1_0.html) is an OpenID specification to allow End-users to act as OpenID Providers (OPs) themselves. Using
-Self-Issued OPs, End-users can authenticate themselves and present claims directly to a Relying Party (RP),
-typically a webapp, without involving a third-party Identity Provider. This makes the interactions fully self sovereign, as
-it doesn't depend on any third parties and strictly happens peer 2 peer, yet still using well known constructs from the OpenID protocol.
+The OpenID Foundation has extended its OAuth2 and OpenID Connect standards to support the **presentation of Verifiable Credentials (VCs)** in a **secure, interoperable, and privacy-preserving** way. This extension, known as **OID4VP (OpenID for Verifiable Presentations)**, provides a protocol for verifiers (also referred to as relying parties) to request specific credentials from a holder (the user), as well as for holders to present such credentials in cryptographically secure formats.
 
-Next to the user acting as an OpenID Provider, this library also has support for Verifiable Presentations using
-the [Presentation Exchange](https://identity.foundation/presentation-exchange/) provided by
-our [PEX](https://github.com/Sphereon-Opensource/pex) library. This means that the Relying Party can express submission
-requirements in the form of Presentation Definitions, defining the Verifiable Credentials(s) types it would like to receive from the User/OP.
-The OP then checks whether it has the credentials to support the Presentation Definition. Only if that is the case it will send the relevant (parts of
-the) credentials as a Verifiable Presentation in the Authorization Response destined for the Webapp/Relying Party. The
-relying party in turn checks validity of the Verifiable Presentation(s) as well as the match with the submission
-requirements. Only if everything is verified successfully the RP serves the protected page(s). This means that the
-authentication can be extended with claims about the authenticating entity, but it can also be used to easily consume
-credentials from supporting applications, without having to setup DIDComm connections for instance. These credentials can either be self-asserted or from trusted 3rd party issuer.
-
-The term Self-Issued comes from the fact that the End-users (OP) issue self-signed ID Tokens to prove validity of the
-identifiers and claims. This is a trust model different from regular OpenID Connect where the OP is run by the
-third party who issues ID Tokens on behalf of the End-user to the Relying Party upon the End-user's consent. This means
-the End-User is in control about his/her data instead of the 3rd party OP.
-
-## Demo: 
-
-<iframe 
-  src="https://player.vimeo.com/video/630104529?badge=0&amp;autopause=0&amp;player_id=0&amp;app_id=58479" 
-  frameborder="0" 
-  className="w-full aspect-video"
-  allow="autoplay; fullscreen; picture-in-picture; clipboard-write" 
-  title="OIDC with SIOPv2 and DIF Presentation Exchange">
-</iframe>
-and a more stripped down demo: 
-
-<iframe
-  className="w-full aspect-video"
-  src="https://www.youtube.com/embed/cqoKuQWPj-s"
-  title="YouTube video player"
-  frameborder="0"
-  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-  allowfullscreen
-></iframe>
-
-## Active Development
-
-_IMPORTANT:_
-
-- _This software still is in an early development stage. As such you should expect breaking changes in APIs, we
-  expect to keep that to a minimum though. Version 0.3.X has changed the external API, especially for Requests, Responses and slightly for the RP/OP classes._
-- _The name of the package also changed from [@sphereon/did-auth-siop](https://www.npmjs.com/package/@sphereon/did-auth-siop) to [@sphereon/siopv2-oid4vp](https://www.npmjs.com/package/@sphereon/SIOP-OpenID4VP), to better reflect specification name changes_
-
-## Functionality
-
-This library supports:
-
-- Generic methods to verify and create/sign Json Web Tokens (JWTs) as used in OpenID Connect, with adapter for Decentralized Identifiers (DIDs), JSON Web Keys (JWK), x509 certificates
-- OP class to create Authorization Requests and verify Authorization Responses
-- RP class to verify Authorization Requests and create Authorization Responses
-- Verifiable Presentation and Presentation Exchange support on the RP and OP sides, according to the OpenID for Verifiable Presentations (OID4VP) and Presentation Exchange specifications
-- SIOPv2 specification version discovery with support for the latest [development version (draft 11)](https://openid.net/specs/openid-connect-self-issued-v2-1_0.html), [Implementers Draft 1](https://openid.net/specs/openid-connect-self-issued-v2-1_0-ID1.html) and the [JWT VC Presentation Interop Profile](https://identity.foundation/jwt-vc-presentation-profile/)
+OID4VP is crucial for decentralized identity systems, where individuals maintain control of their Verifiable Credentials while verifiers can confirm the authenticity, validity, and proof of ownership of these credentials.
 
 
-## Acknowledgements
+<Info>We have [exercises](/exercises/oid4vc/oid4vp/oid4vp-exercises) that progressively let you use the REST API, understanding the process better in each step. You can try these after first reading this page to understand the concepts</Info>
 
-This library has been partially sponsored by [Gimly](https://www.gimly.io/) as part of the [NGI Ontochain](https://ontochain.ngi.eu/) project. NGI Ontochain has received funding from the European Union’s Horizon 2020 research and innovation programme under grant agreement No 957338
+---
 
-<center><a href="https://www.gimly.io/"><img src="https://avatars.githubusercontent.com/u/64525639?s=200&v=4" alt="Gimly" height="80"/></a>&nbsp;<a href="https://ontochain.ngi.eu" target="_blank"><img src="https://ontochain.ngi.eu/sites/default/files/logo-ngi-ontochain-positive.png" height="100px" alt="ONTOCHAIN Logo"/></a>&nbsp;<img src="https://ontochain.ngi.eu/sites/default/files/images/EU_flag.png" height="80px" alt="European Union Flag"/></center>
+# What is OID4VP?
+
+**OID4VP** enables:
+1. **Credential Queries by Verifiers**: Verifiers can specify exactly what credentials or claims they need from a user using a **presentation request**. This includes the credential type, issuer restrictions, and claim-specific details (e.g., "birth date older than 18").
+2. **Support for Multiple Credential Formats**: OID4VP supports various Verifiable Credential formats, enabling interoperability between different ecosystems, issuers, and wallets. Examples include:
+- **JSON Web Token (JWT)**: A widely adopted and transport-friendly format.
+- **Selective Disclosure JSON Web Token (SD-JWT)**: Extensions to the JWT format, allowing for verifiable selective disclosure of individual claims
+- **JSON-LD-based Credentials**: Including **Decentralized Identifiers (DIDs)** for decentralized ecosystems.
+- **Mdl/Mdoc**: Support for IS18013-5 Mdl/Mdocs in CBOR format.
+
+This versatility ensures that developers can leverage OID4VP regardless of the credential technologies used by their system or the credentials held by users.
+
+OID4VP builds on well-known OAuth2 patterns while extending them with privacy-preserving mechanisms such as **Selective Disclosure** and **Holder Binding**.
+
+---
+
+# Key Features of OID4VP
+
+### 1. **Support for Multiple Credential Formats**
+
+OID4VP is designed to work seamlessly with different Verifiable Credential formats. This is critical to enabling interoperability in decentralized identity ecosystems, where diverse issuers and credential technologies coexist. Supported formats are listed above.
+Developers can utilize these supported formats depending on the context and capabilities of their ecosystem. For example, an e-commerce platform might prefer JWT-based credentials for performance reasons, while a government digital identity system might adopt JSON-LD for decentralization and interoperability.
+
+---
+
+### 2. **Credential Queries by Verifiers**
+
+OID4VP introduces powerful mechanisms that allow verifiers to define **credential queries** when forming their presentation requests. A **Presentation Request** lets verifiers express the exact credentials they need from a holder, including attributes, supported formats, and verification constraints.
+
+#### Key Capabilities of Credential Queries:
+- **Request Specific Credential Types**: Verifiers can specify the type of credential they need, e.g., "Government-issued ID" or "Proof of Employment."
+- **Claim Filters**: Verifiers can define specific claims or attributes required within the credential. For example, instead of a holder revealing a full credential for age verification, the verifier could request proof that "age > 18."
+- **Issuer Constraints**: Requests may restrict the credentials to specific issuers. For example, only trust credentials issued by government or certified institutions.
+- **Credential Format Preferences**: Verifiers can indicate which credential formats they accept, such as **JWT**, **JSON-LD**, etc.
+
+This flexibility in expressing requirements allows relying parties to only request credentials that match their needs while reducing unnecessary data exchanges.
+
+#### Example: Presentation Request in Action
+- A verifier issues a **presentation request** specifying:
+1. Required claim: "Citizenship" with the value "CountryX".
+2. Required credential type: "Government-issued Digital ID".
+3. Accepted credential formats: JWT and JSON-LD.
+
+- The holder's wallet evaluates the request, identifies a matching credential, and prepares a presentation. The wallet ensures the following:
+- Only the requested claim (e.g., "Citizenship") is disclosed.
+- The credential format conforms to one of the verifier's supported types.
+
+---
+
+### 3. **Selective Disclosure**
+
+Selective Disclosure is a privacy-preserving feature at the heart of OID4VP. It allows credential holders to present only the specific data required by a verifier, instead of sharing the entire credential. For instance:
+- Sharing "Proof of Age" without revealing the actual date of birth.
+- Proving "Employment with CompanyX" without exposing job title or salary details.
+
+This is enabled through mechanisms like **cryptographic proofs** (e.g., BBS+ Signatures for JSON-LD credentials or Disclosures in JWT-based credentials), ensuring data authenticity and integrity even with partial disclosures.
+
+---
+
+### 4. **Holder Binding**
+
+Holder Binding ensures that the Verifiable Presentations created are tied to the **individual presenting them**. Using cryptographic techniques, OID4VP ensures that only the rightful holder of the credential can create and sign a presentation. This prevents malicious actors from using stolen or compromised credentials.
+
+---
+
+# OID4VP in Action: Workflow Overview
+
+OID4VP enables a seamless, secure flow between verifiers, holders, and credential issuers. Here is a simplified explanation:
+
+1. **Verifier’s Presentation Request**:
+- The verifier sends a **credential query** (presentation request) specifying the type and attributes for the desired credentials.
+- The request is passed to the user's wallet or identity agent.
+
+2. **Holder’s Validation & Selection**:
+- The holder reviews the request and matches it with credentials stored in their wallet.
+- The holder determines what data to disclose (using selective disclosure) and prepares a **Verifiable Presentation**.
+
+3. **Holder’s Response**:
+- The holder returns the signed Verifiable Presentation to the verifier.
+
+4. **Verification**:
+- The verifier validates the credentials and associated cryptographic proofs.
+- Checks include:
+- Integrity of the data.
+- Authority of the issuer.
+- Binding of the credentials to the holder.
+
+---
+
+# Use Cases of OID4VP
+
+### Example 1: **Higher Education Enrollment**
+A university requests proof of prior education credentials during the admission process:
+- The verifier requests specific attributes like degree type and issuing institution.
+- The student shares a Verifiable Credential with matching claims, while withholding sensitive data like GPA or transcript details.
+
+### Example 2: **Employment Verification**
+A verifier (potential employer) requests proof of employment:
+- Credential Query: "Employment Proof" with the claim "CompanyName = X".
+- Holder responds with a Verifiable Presentation showing proof of employment, omitting unrelated details (e.g., previous job history or salary).
+
+### Example 3: **Travel Authorization**
+An airline requests credentials to verify visa validity and vaccination status:
+- Credential Query: 1) "COVID-19 Vaccination Record," 2) "Valid Visa for CountryX."
+- Holder provides both in a single Verifiable Presentation using selective disclosure to hide unnecessary claims.
+
+---
+
+# Relevant Links and Resources
+
+- [OID4VP Specification](https://openid.net/specs/openid-4-verifiable-presentations-1_0.html)
+- [OID4VP Exercises](/exercises/oid4vc/oid4vp/oid4vp-exercises)

@@ -36,9 +36,15 @@
     },
     {
       "isDefaultHidden": true,
-      "name": "OID4VCI",
+      "name": "Issuance (OID4VCI) OpenAPI",
       "url": "oid4vci-api-reference",
-      "openapi": "/oid4vc/oid4vci/issuer/api-reference/openapi.json"
+      "openapi": "/oid4vc/oid4vci/api-reference/openapi.json"
+    },
+    {
+      "isDefaultHidden": true,
+      "name": "Status List OpenAPI",
+      "url": "status-list-api-reference",
+      "openapi": "/status-list/api-reference/openapi.yaml"
     },
     {
       "name": "Changelogs",
@@ -78,35 +84,47 @@
       "pages": [
         "oid4vc/introduction",
         "changelogs/oid4vc/changelog",
+        "exercises/oid4vc/oid4vci/credential-offer-exercises",
+        "exercises/oid4vc/oid4vp/oid4vp-exercises",
         {
-          "group": "OID4VCI Issuer",
+          "group": "Issuance (OID4VCI)",
           "pages": [
-            "oid4vc/oid4vci/issuer/introduction",
-            "oid4vc/oid4vci/issuer/REST",
+            "oid4vc/oid4vci/introduction",
+            "oid4vc/oid4vci/REST",
             {
               "group": "OpenAPI",
               "pages": [
-                "oid4vc/oid4vci/issuer/api-reference/backend/create-credential-offer",
-                "oid4vc/oid4vci/issuer/api-reference/backend/get-credential-issuance-status",
-                "oid4vc/oid4vci/issuer/api-reference/backend/get-credential-offer"
+                "oid4vc/oid4vci/api-reference/backend/create-credential-offer",
+                "oid4vc/oid4vci/api-reference/backend/get-credential-issuance-status",
+                "oid4vc/oid4vci/api-reference/backend/get-credential-offer"
               ]
             },
-            "exercises/oid4vc/oid4vci/credential-offer-exercises",
+
             "oid4vc/oid4vci/credential-branding",
-            "oid4vc/oid4vci/issuer/development"
+            {
+              "group": "Development",
+              "pages": [
+                "oid4vc/oid4vci/development/client",
+                "oid4vc/oid4vci/development/state-manager"
+              ]
+            }
           ]
         },
         {
-          "group": "OID4VCI Client",
-          "pages": [
-            "oid4vc/oid4vci/client/introduction",
-            "oid4vc/oid4vci/client/usage"
-          ]
-        },
-        {
-          "group": "OID4VP & SIOPv2",
+          "group": "Relying Party (OID4VP & SIOPv2)",
           "pages": [
             "oid4vc/siop-oid4vp/introduction",
+            "oid4vc/oid4vci/REST",
+            {
+              "group": "OpenAPI",
+              "pages": [
+                "oid4vc/siop-oid4vp/api-reference/backend/create-authentication-request",
+                "oid4vc/siop-oid4vp/api-reference/backend/get-authentication-status",
+                "oid4vc/siop-oid4vp/api-reference/backend/remove-authentication-request-state",
+                "oid4vc/siop-oid4vp/api-reference/definitions/get-presentation-definitions",
+                "oid4vc/siop-oid4vp/api-reference/definitions/get-presentation-definition-by-id"
+              ]
+            },
             "oid4vc/siop-oid4vp/steps",
             "oid4vc/siop-oid4vp/op-an-rp-setup",
             "oid4vc/siop-oid4vp/authorization",
@@ -116,12 +134,46 @@
       ]
     },
     {
+      "group": "Status Lists",
+      "pages": [
+        "status-list/introduction",
+        "status-list/REST",
+        "exercises/status-list/status-list-exercises",
+        {
+          "group": "OpenAPI",
+          "pages": [
+            {
+              "group": "StatusList",
+              "pages": [
+                "status-list/api-reference/statuslist/create-status-list"
+              ]
+            },
+            {
+              "group": "StatusHosting",
+              "pages": [
+                "status-list/api-reference/statushosting/get-status-list",
+                "status-list/api-reference/statushosting/get-status-list-entry-by-id",
+                "status-list/api-reference/statushosting/get-status-list-entry-by-index"
+              ]
+            },
+            {
+              "group": "StatusManagement",
+              "pages": [
+                "status-list/api-reference/statusmanagement/update-credential-status"
+              ]
+            }
+          ]
+        }
+
+      ]
+    },
+    {
       "group": "Presentation Exchange",
       "pages": [
         "pex/introduction",
-        "pex/development",
         "pex/api",
         "pex/migration",
+        "pex/development",
         "changelogs/pex/changelog"
       ]
     },
@@ -152,11 +204,10 @@
       "group": "eIDAS Advanced Electronic Signature Client",
       "pages": [
         "eidas-signature-client/introduction",
-        "eidas-signature-client/development",
         "eidas-signature-client/key-provider-service",
         "eidas-signature-client/signature-service",
         "eidas-signature-client/pdf-signatures",
-        "eidas-signature-client/verifiable-credentials-and-ssi",
+        "eidas-signature-client/development",
         "changelogs/eidas-signature-client/changelog"
       ]
     },
@@ -166,25 +217,6 @@
         "wellknown-did-client/introduction",
         "wellknown-did-client/development",
         "changelogs/wellknown-did-client/changelog"
-      ]
-    },
-    {
-      "group": "API Documentation",
-      "pages": [
-        "api-reference/introduction"
-      ]
-    },
-    {
-      "group": "Examples",
-      "pages": [
-        "essentials/markdown",
-        "essentials/code",
-        "essentials/images",
-        "essentials/settings",
-        "essentials/navigation",
-        "essentials/reusable-snippets",
-        "quickstart",
-        "development"
       ]
     }
   ],

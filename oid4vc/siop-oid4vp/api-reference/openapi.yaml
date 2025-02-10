@@ -1,0 +1,473 @@
+openapi: 3.0.0
+info:
+  title: Sphereon OID4VP RP API
+  version: 0.1.0
+  description: "API for OID4VP Relying Party operations. This API allows a backend (webapp) to create an OID4VP session to request presentations from a holder.\r\n\r\nThe flow is as follows: \r\n- Create the session with a URI response. Use response elements in a QR code (cross-device) or link/button (same device)\r\n- Poll the auth-request status for progress\r\n- Receive the presentations in the auth-request in case the presentations are submitted by the holder\r\n- Delete the session\r\n\r\nThe wallet endpoints are for informational purposes. Any wallet conforming to the OID4VP specification should know how to interpret these endpoints"
+  contact:
+    name: Sphereon
+    url: 'https://sphereon.com'
+    email: support@sphereon.com
+  termsOfService: ''
+  license:
+    name: Apache2
+tags:
+  - name: Backend
+    description: 'The Backend/webapp endpoints, that need protection'
+  - name: Definitions
+    description: Presentation Definition management
+  - name: Wallet
+    description: The endpoints used by the wallets/holders
+paths:
+  /presentation-definitions:
+    get:
+      summary: Get presentation definitions
+      description: |
+        Get the presentation definitions this OID4VP Relying party is managing. Please note that there are specific seperate REST APIs to manage Presentation Definitions!
+      operationId: get-presentation-definitions
+      tags:
+        - Definitions
+      responses:
+        '200':
+          description: Presentation definitions
+          content:
+            application/json:
+              example:
+                - id: "a4cab09e-7c08-42c9-870b-c2b83a2c8caa"
+                  definitionId: "WoonplaatsverklaringVCJWT"
+                  version: "2.1.3"
+                  name: "Name of the definition if supplied"
+                  purpose: "Purpose to be shown to wallets if supplied"
+                  definitionPayload: {
+
+                  }
+                  dcqlPayload: {
+
+                  }
+                  createdAt: 12344
+                  lastUpdatedAt: 12344
+
+        '500':
+          description: Error retrieving definitions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  '/presentation-definitions/{id}':
+    get:
+      summary: Get presentation definition by id
+      operationId: get-presentation-definition-by-id
+      description: |
+        Get the presentation definition for this OID4VP Relying party by id.
+      tags:
+        - Definitions
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Identifier for the presentation definition that specifies which credentials are required. This is an internal uuid, as defintion ids are not globally unique
+          schema:
+            type: string
+            example: bf43164d-43a0-48bc-b213-4f6b58fb0e99
+      responses:
+        '200':
+          description: Presentation definition
+          content:
+            application/json:
+              example:
+                id: "a4cab09e-7c08-42c9-870b-c2b83a2c8caa"
+                definitionId: "WoonplaatsverklaringVCJWT"
+                version: "2.1.3"
+                name: "Name of the definition if supplied"
+                purpose: "Purpose to be shown to wallets if supplied"
+                definitionPayload: {
+
+                }
+                dcqlPayload: {
+
+                }
+                createdAt: 12344
+                lastUpdatedAt: 12344
+
+        '500':
+          description: Error retrieving definitions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+
+
+  '/oid4vp/webapp/definitions/{definitionId}/auth-requests':
+    post:
+      summary: Create authorization request
+      description: |
+        Creates a new OID4VP Authorization Request that can be used to request verifiable credentials from a wallet.
+        Returns URIs needed to initiate the auth flow and check its status. The definitionId passed in needs to be known to the agent. Meaning the presentation definition needs to be stored beforehand using the presentation manager plugin/API
+      tags:
+        - Backend
+      operationId: create-authorization-request
+      parameters:
+        - name: definitionId
+          in: path
+          required: true
+          description: Identifier for the presentation definition that specifies which credentials are required
+          schema:
+            type: string
+            example: WoonplaatsverklaringVCJWT
+      requestBody:
+        description: Optional configuration for the authorization request
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                response_redirect_uri:
+                  type: string
+                  description: Optional URI where the wallet should redirect for completing the authentication
+                  example: 'https://example.com/callback'
+      responses:
+        '200':
+          description: Authentication request created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenerateAuthRequestURIResponse'
+        '500':
+          description: Error creating authorization request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+                  # /oid4vp/webapp/definitions:
+                  #   get:
+                  #     summary: Get presentation definitions
+                  #     description: |
+                  #       Get the presentation definitions this OID4VP Relying party is managing. Please note that there are specific seperate REST APIs to manage Presentation Definitions!
+                  #     tags:
+                  #       - Backend
+                  #     responses:
+                  #       '200':
+                  #         description: Presentation definitions
+                  #         content:
+                  #           application/json:
+                  #             example:
+                  #               - id: "a4cab09e-7c08-42c9-870b-c2b83a2c8caa"
+                  #                 definitionId: "WoonplaatsverklaringVCJWT"
+                  #                 version: "2.1.3"
+                  #                 name: "Name of the definition if supplied"
+                  #                 purpose: "Purpose to be shown to wallets if supplied"
+                  #                 definitionPayload: {
+
+                  #                 }
+                  #                 dcqlPayload: {
+
+              #                 }
+              #                 createdAt: 12344
+              #                 lastUpdatedAt: 12344
+
+  #       '500':
+  #         description: Error retrieving definitions
+  #         content:
+  #           application/json:
+  #             schema:
+  #               $ref: '#/components/schemas/ErrorResponse'
+  /oid4vp/webapp/auth-status:
+    post:
+      summary: Get authorization status
+      operationId: get-authorization-status
+      description: |
+        Checks the current status of an Authorization Request. Can optionally include verified credential data 
+        in the response when the status is 'verified'.
+      tags:
+        - Backend
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                correlationId:
+                  type: string
+                  description: Unique identifier for the session
+                  example: 2cc29d1c-7d00-46f8-b0ae-b4779d2ff143
+                definitionId:
+                  type: string
+                  description: Identifier for the presentation definition that specifies which credentials are required
+                  example: WoonplaatsverklaringVCJWT
+                includeVerifiedData:
+                  type: string
+                  description: Controls what verified data to include in the response. Only applies when status is 'verified'. Either nothing, the presentations (vp) or the credentials flattened (cs-flat)
+                  enum:
+                    - none
+                    - vp
+                    - cs-flat
+                  example: cs-flat
+              required:
+                - correlationId
+                - definitionId
+      responses:
+        '200':
+          description: Authentication status retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthStatusResponse'
+        '404':
+          description: Auth request not found
+        '500':
+          description: Error retrieving auth status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  '/oid4vp/webapp/definitions/{definitionId}/auth-requests/{correlationId}':
+    delete:
+      summary: Remove authorization request state
+      operationId: remove-authorization-request
+      description: Deletes all state associated with an authorization request. Use for cleanup after completion or timeout.
+      tags:
+        - Backend
+      parameters:
+        - name: definitionId
+          in: path
+          required: true
+          description: Identifier for the presentation definition that specifies which credentials are required
+          schema:
+            type: string
+            example: WoonplaatsverklaringVCJWT
+        - name: correlationId
+          in: path
+          required: true
+          description: Unique identifier for the session
+          schema:
+            type: string
+            example: 2cc29d1c-7d00-46f8-b0ae-b4779d2ff143
+      responses:
+        '200':
+          description: Authorization request state removed successfully
+          content:
+            application/json:
+              schema:
+                type: boolean
+        '404':
+          description: Auth request not found
+        '500':
+          description: Error removing authorization request state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  '/siop/definitions/{definitionId}/auth-responses/{correlationId}':
+    post:
+      summary: Verify authorization response
+      description: |
+        Verifies the presentation response from a wallet. Handles both direct responses and form-encoded responses.
+        Returns either a challenge response for first-party flows or a redirect URI for third-party flows.
+      tags:
+        - Wallet
+      operationId: verify-authorization-response
+      parameters:
+        - name: definitionId
+          description: Identifier for the presentation definition that specifies which credentials are required
+          in: path
+          required: true
+          schema:
+            type: string
+            example: WoonplaatsverklaringVCJWT
+        - name: correlationId
+          description: Unique identifier for the authentication session
+          in: path
+          required: true
+          schema:
+            type: string
+            example: 2cc29d1c-7d00-46f8-b0ae-b4779d2ff143
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthorizationResponsePayload'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AuthorizationResponsePayload'
+      responses:
+        '200':
+          description: Authentication response verified successfully
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/AuthChallengeResponse'
+                  - $ref: '#/components/schemas/AuthResponseRedirect'
+        '404':
+          description: Auth request not found
+        '500':
+          description: Error verifying auth response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  '/siop/definitions/{definitionId}/auth-requests/{correlationId}':
+    get:
+      summary: Get authorization request
+      operationId: get-authorization-request
+      description: Retrieves the JWT representation of an authorization request. Called by wallets to get the full request details.
+      tags:
+        - Wallet
+      parameters:
+        - name: definitionId
+          description: Identifier for the presentation definition that specifies which credentials are required
+          in: path
+          required: true
+          schema:
+            type: string
+            example: WoonplaatsverklaringVCJWT
+        - name: correlationId
+          description: Unique identifier for the session
+          in: path
+          required: true
+          schema:
+            type: string
+            example: b326c4ab-16f1-4304-83e1-4637f8fe4207
+      responses:
+        '200':
+          description: Authentication request retrieved successfully
+          content:
+            application/jwt:
+              schema:
+                type: string
+        '404':
+          description: Auth request not found
+        '500':
+          description: Error retrieving authorization request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+components:
+  schemas:
+    GenerateAuthRequestURIResponse:
+      type: object
+      properties:
+        correlationId:
+          type: string
+          description: Unique identifier for the authentication session
+          example: 2cc29d1c-7d00-46f8-b0ae-b4779d2ff143
+        definitionId:
+          type: string
+          description: Identifier for the presentation definition that specifies required verifiable credentials
+          example: WoonplaatsverklaringVCJWT
+        authRequestURI:
+          type: string
+          description: (Deep)link URI that initiates the authentication flow by redirect. The wallet will use this value. Should be part of a redirect, link or QR code
+          example: 'openid-vc://?request_uri=https://example.com/siop/definitions/WoonplaatsverklaringVCJWT/auth-requests/b5cab09e-7c08-42c9-870b-c2b83a2c8acd'
+        authStatusURI:
+          type: string
+          description: Endpoint URL for checking the status of the authentication request
+          example: 'https://example.com/webapp/auth-status'
+      required:
+        - correlationId
+        - definitionId
+        - authRequestURI
+        - authStatusURI
+    AuthStatusResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          description: Current state of the authentication request in its lifecycle
+          enum:
+            - created
+            - sent
+            - received
+            - verified
+            - error
+          example: created
+        correlationId:
+          type: string
+          description: Unique identifier for the authentication session
+          example: 2cc29d1c-7d00-46f8-b0ae-b4779d2ff143
+        error:
+          type: string
+        definitionId:
+          description: Identifier for the presentation definition that specifies which credentials are required
+          example: WoonplaatsverklaringVCJWT
+          type: string
+        lastUpdated:
+          type: integer
+          description: Unix timestamp in milliseconds representing when the status was last updated
+          example: 1706515200000
+        payload:
+          $ref: '#/components/schemas/AuthorizationResponsePayload'
+        verifiedData:
+          type: object
+          additionalProperties: true
+      required:
+        - status
+        - correlationId
+        - definitionId
+        - lastUpdated
+    AuthorizationResponsePayload:
+      type: object
+      properties:
+        presentation_submission:
+          type: object
+          description: Object containing information about how the presented credentials fulfill the presentation definition requirements
+        vp_token:
+          oneOf:
+            - type: string
+              description: |
+                A Verifiable Presentation in JWT or JSON-LD format. Required in responses when `vp_token` is the `response_type`.
+            - type: array
+              description: Array of verifiable presentations
+              items:
+                type: object
+            - type: object
+              description: Single verifiable presentation object
+        is_first_party:
+          type: boolean
+          description: Indicates if this is a first-party authentication flow
+    AuthChallengeResponse:
+      type: object
+      description: Response containing the presentation session identifier for first-party flows
+      properties:
+        presentation_during_issuance_session:
+          type: string
+          description: Identifier for the presentation session
+          example: N7RmqG2xT9unEh
+      required:
+        - presentation_during_issuance_session
+    AuthResponseRedirect:
+      type: object
+      description: Response containing the redirect URI for non-first-party flows
+      properties:
+        redirect_uri:
+          type: string
+          description: URI where the wallet should redirect after authentication
+          example: 'https://example.com/callback'
+      required:
+        - redirect_uri
+    ErrorResponse:
+      type: object
+      description: Error details returned when an operation fails
+      properties:
+        status:
+          type: integer
+          description: HTTP status code
+          example: 500
+        message:
+          type: string
+          description: Human-readable error message
+          example: Could not verify auth status
+        error:
+          type: object
+          description: Additional error details or stack trace when available
+      required:
+        - status
+        - message
+servers:
+  - url: 'https://agent.ssi.dev.sphereon.com/'
+    description: 'Demo OID4VP Relying Party'
+  - url: 'http://localhost:5010'
+    description: 'Development environment'

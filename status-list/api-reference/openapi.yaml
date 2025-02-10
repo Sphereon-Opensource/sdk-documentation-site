@@ -1,0 +1,468 @@
+openapi: 3.0.3
+info:
+  version: 0.1.0
+  title: Status List Management API
+  description: This API provides endpoints for managing status lists related to digital credentials.
+servers:
+  - url: https://agent.ssi.dev.sphereon.com
+tags:
+  - name: StatusList
+    description: Status List Management
+  - name: StatusHosting
+    description: Hosting of status lists
+  - name: StatusManagement
+    description: Managing the status of individual indices with a list
+
+paths:
+  /status-lists:
+    post:
+      tags:
+        - StatusList
+      summary: Create a new status list
+      description: Creates a new status list and returns its status list credential.
+      operationId: create-status-list
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateStatusListRequest'
+            examples:
+              OAuth Status List:
+                value:
+                  statusList:
+                    type: "OAuthStatusList"
+                    id: "12345"
+                    issuer: "did:web:agent.ssi.dev.sphereon.com"
+                    correlationId: "my-business-key-for-oauth-status-list"
+                    lenght: 250000
+                    proofFormat: "jwt"
+                    oauthStatusList:
+                      bitsPerStatus: 1
+              Status List 2021:
+                value:
+                  statusList:
+                    type: "StatusList2021"
+                    id: "abcde"
+                    issuer: "did:web:agent.ssi.dev.sphereon.com"
+                    correlationId: "my-business-key-for-status-list-2021"
+                    lenght: 250000
+                    proofFormat: "jwt"
+                    statusList2021:
+                      purpose: revocation
+      responses:
+        '200':
+          $ref: '#/components/responses/CreateStatusListResponse'
+        '400':
+          $ref: '#/components/responses/InvalidInputResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerErrorResponse'
+  /status-lists/{statusListId}:
+    get:
+      tags:
+        - StatusHosting
+      operationId: get-status-list
+      summary: Get a status list credential. This is what a wallet or RP would call, as this value ends up in digital credentials
+      description: >
+        Retrieve the status list credential for the given index. 
+
+        The response may be:
+          - A signed JWT or SD-JWT string, for example, in the case of OAuth StatusLists.
+          - A JSON-encoded Verifiable Credential, as per the W3C Verifiable Credential specification.
+      parameters:
+        - name: statusListId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The index of the status list to retrieve.
+        - name: correlationId
+          in: query
+          schema:
+            type: string
+          description: Optional correlation ID for querying the status list.
+      responses:
+        '200':
+          description: Status list credential retrieved successfully. The returned response depends on the type of status list being queried.
+          content:
+            application/jwt:
+              schema:
+                type: string
+                description: >
+                  A signed JWT or SD-JWT string representing the status list 
+                  credential (used by OAuth StatusLists or similar).
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/VerifiableCredential'
+                  - type: string
+                    description: A string representation of the credential (JWT or SD-JWT).
+        '400':
+          $ref: '#/components/responses/InvalidInputResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerErrorResponse'
+  /status-lists/{statusListId}/status/entry-by-id/{entryId}:
+    get:
+      tags:
+        - StatusHosting
+      operationId: get-status-list-entry-by-id
+      summary: Get status list entry by ID
+      description: Retrieve the status details of a specific entry in a status list. This is mainly only use full for an issuer managing the status list. It should not be called by a RP or wallet
+      parameters:
+        - name: statusListId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The ID of the status list.
+        - name: entryId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The ID of the entry to retrieve in the status list.
+        - name: statusListIdType
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [StatusListId, CorrelationId]
+          description: Type of status list ID.
+        - name: entryIdType
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [StatusListIndex, CorrelationId]
+          description: Type of entry ID.
+      responses:
+        '200':
+          $ref: '#/components/responses/StatusListEntryResponse'
+        '400':
+          $ref: '#/components/responses/InvalidInputResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerErrorResponse'
+  /status-lists/{statusListId}/status/index/{index}:
+    get:
+      tags:
+        - StatusHosting
+      operationId: get-status-list-entry-by-index
+      summary: Get status by index
+      description: Retrieve the status of a specific index in the status list. This is usefull for an issuer managing the status list. It should not be used by a RP or wallet
+      parameters:
+        - name: statusListId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The specific list id to retrieve status entry in.
+        - name: index
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: The specific index in the status list to retrieve status for.
+        - name: correlationId
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Optional correlation ID.
+      responses:
+        '200':
+          $ref: '#/components/responses/StatusListEntryResponse'
+        '400':
+          $ref: '#/components/responses/InvalidInputResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerErrorResponse'
+  /credentials/status:
+    post:
+      tags:
+        - StatusManagement
+      operationId: update-credential-status
+      summary: Update credential status
+      description: Updates the status of a credential in the status list. This endpoint supports updates by `credentialId` or `statusListIndex`, along with optional parameters for `statusListId` or correlation IDs.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateStatusRequest'
+      parameters:
+        - name: statusListId
+          in: query
+          schema:
+            type: string
+          description: Optional status list identifier provided as a query parameter. Overrides default or body-specified value if present.
+        - name: statusListCorrelationId
+          in: query
+          schema:
+            type: string
+          description: Optional correlation ID for the status list. Overrides default or body-specified value if present.
+        - name: entryCorrelationId
+          in: query
+          schema:
+            type: string
+          description: Optional correlation ID for a specific entry in the status list. Overrides default or body-specified value if present.
+      responses:
+        '200':
+          $ref: '#/components/responses/UpdateStatusResponse'
+        '400':
+          $ref: '#/components/responses/InvalidInputResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerErrorResponse'
+components:
+  schemas:
+    UpdateStatusRequest:
+      type: object
+      properties:
+        statusListId:
+          type: string
+          nullable: true
+          description: ID of the status list.
+        statusListCorrelationId:
+          type: string
+          nullable: true
+          description: A correlation Id for the status list. This is typically a business key
+        credentialId:
+          type: string
+          nullable: true
+          description: An optional credentialId if you kown the value. Can be used for a lookup instead of the statusListIndex or entryCorrelationId
+        statusListIndex:
+          type: number
+          nullable: true
+          description: The index in the statusList. Needs to be provided in case a statusListIndex or entryCorrelationId is not used
+        entryCorrelationId:
+          type: string
+          nullable: true
+          description: An entry correlation Id for the status list. This is typically a business key associated with an index. It allows you to associated business data in your Line of business system with this index, so you can update the status later on more easily
+        credentialStatus:
+          type: array
+          items:
+            type: object
+            properties:
+              status:
+                type: string
+                enum: ['0', '1']
+                description: New status value for the entry.
+    CreateStatusListRequest:
+      type: object
+      properties:
+        statusList:
+          $ref: "#/components/schemas/CreateStatusList"
+      required:
+        - statusList
+    CreateStatusList:
+      type: object
+      properties:
+        type:
+          type: string
+          enum: ["StatusList2021", "OAuthStatusList"]
+          description: The type of status list to create.
+        id:
+          type: string
+          description: A unique identifier for the status list (e.g., DID or other unique ID).
+          example: "did:web:example.com/status-list/123456"
+        issuer:
+          oneOf:
+            - type: string
+              description: A string identifier of the issuer (such as a DID).
+            - $ref: '#/components/schemas/Issuer'
+              description: Detailed issuer information.
+        correlationId:
+          type: string
+          nullable: true
+          description: Optional correlation ID for tracking purposes.
+        length:
+          type: integer
+          nullable: true
+          description: Optional length (number of entries) for the status list.
+          example: 1000
+        proofFormat:
+          type: string
+          nullable: true
+          enum: ["jwt", "ldp"]
+          description: Cryptographic proof format (JWT or Linked Data Proof).
+        keyRef:
+          type: string
+          nullable: true
+          description: An optional reference to the key that will sign the status list.
+        statusList2021:
+          nullable: true
+          $ref: '#/components/schemas/StatusList2021'
+        oauthStatusList:
+          nullable: true
+          $ref: '#/components/schemas/OAuthStatusList'
+    StatusList2021:
+      type: object
+      properties:
+        purpose:
+          type: string
+          nullable: true
+          enum:
+            - revocation
+              suspension
+          description: The intended purpose for the status list.
+
+    OAuthStatusList:
+      type: object
+      properties:
+        bitsPerStatus:
+          type: number
+          nullable: true
+          description: The bits per status. Defaults to 1. Allowed values 1,2,4,8
+
+    Issuer:
+      type: object
+      properties:
+        id:
+          type: string
+          description: A DID or unique identifier for the issuer.
+        name:
+          type: string
+          nullable: true
+          description: The issuer's name (optional).
+
+
+    VerifiableCredential:
+      type: object
+      properties:
+        "@context":
+          type: array
+          items:
+            type: string
+          example:
+            - "https://www.w3.org/2018/credentials/v1"
+        id:
+          type: string
+          example: "urn:uuid:123e4567-e89b-12d3-a456-426614174000"
+        type:
+          type: array
+          items:
+            type: string
+          example:
+            - "VerifiableCredential"
+        issuer:
+          type: string
+          example: "did:web:agent.ssi.dev.sphereon.com"
+        issuanceDate:
+          type: string
+          format: date-time
+          example: "2023-01-01T12:00:00Z"
+        credentialSubject:
+          type: object
+          description: Subject of the credential.
+          additionalProperties: true
+          example:
+            id: "did:web:agent.ssi.dev.sphereon.com/subjects/123"
+    StatusListSummary:
+      type: object
+      properties:
+        id:
+          type: string
+          description: The unique identifier of the status list.
+          example: "urn:uuid:123e4567-e89b-12d3-a456-426614174001"
+        type:
+          type: string
+          description: The type of the status list (e.g., StatusList2021 or OAuthStatusList).
+          example: "StatusList2021"
+        issuer:
+          type: string
+          description: The DID or identifier of the issuer of the status list.
+          example: "did:web:agent.ssi.dev.sphereon.com"
+        createdAt:
+          type: string
+          format: date-time
+          description: The date and time the status list was created.
+          example: "2023-01-01T12:00:00Z"
+        url:
+          type: string
+          description: The URL to fetch details of this specific status list.
+          example: "https://agent.ssi.dev.sphereon.com/status-lists/123e4567-e89b-12d3-a456-426614174001"
+  responses:
+    CreateStatusListResponse:
+      description: Status list created successfully.
+      content:
+        application/json:
+          schema:
+            type: string
+            example: eyJhbGciOiJFUzI1NiIsImtpZCI6IjEyIiwidHlwIjoic3RhdHVzbGlzdCtqd3QifQ.eyJleHAiOjIyOTE3MjAxNzAsImlhdCI6MTY4NjkyMDE3MCwiaXNzIjoiaHR0cHM6Ly9leGFtcGxlLmNvbSIsInN0YXR1c19saXN0Ijp7ImJpdHMiOjEsImxzdCI6ImVOcmJ1UmdBQWhjQlhRIn0sInN1YiI6Imh0dHBzOi8vZXhhbXBsZS5jb20vc3RhdHVzbGlzdHMvMSIsInR0bCI6NDMyMDB9.iKJNYVgectVV3KKvix6uO-2FJNgEeAD5q4LXWxNrKM7sqyDt9SBYx5wwmfSTywA0lA1naMNH3ynf32wMXtvRQw
+    StatusListResponse:
+      description: Status list retrieved successfully.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              statusList:
+                $ref: '#/components/schemas/CreateStatusListRequest'
+    StatusListEntryResponse:
+      description: Status list entry retrieved successfully.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              entryId:
+                type: string
+              status:
+                type: string
+                enum: ['0', '1']
+    UpdateStatusResponse:
+      description: Credential status updated successfully.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+                example: true
+              statusesUpdated:
+                type: integer
+                example: 1
+    InvalidInputResponse:
+      description: Invalid input was provided.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+                example: "Invalid input."
+              details:
+                type: string
+                nullable: true
+    NotFoundResponse:
+      description: The resource could not be found
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+                example: "The resource could not be found."
+              details:
+                type: string
+                nullable: true
+    InternalServerErrorResponse:
+      description: An internal server error occurred.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+                example: "An unexpected error occurred."
+              details:
+                type: string
+                nullable: true

@@ -1,0 +1,29 @@
+# StatusList REST API
+
+The Sphereon agent can expose a management and hosting REST API for Status Lists in W3C StatusList2021 and IETF OAuth/Token Status lists
+
+# Full OpenAPI
+
+The OpenAPI description of our OID4VCI agent can be found [on our Swaggerhub here](https://app.swaggerhub.com/apis/SphereonInt/Status-List)
+
+
+There are 3 endpoint types (tags) of which only the `StatusList` and `StatusManagement` endpoints are important to create an integration into your solution. We provide some options
+to query a status list entry by index or correlationId. This should only be used on the issuer side that manages the status lis. tOnly the /status-list/{index} endpoint is to be
+used by wallets or relying parties, which need to conform to the respective statuslist and credential format specifications and thus should automatically be compatible with our
+implementation
+
+* **StatusList:**
+
+  These endpoints are for actually managing status lists.
+* **StatusManagement:**
+
+  This endpoint is responsible for updating a status within a status-list. This can be done by index value, or by credential Id value if known.
+
+* **StatusHosting:**
+
+  The `/status-list/{index}` endpoint will end up in an issued credential and thus will be queried by Relying Parties and potentially wallets when inspecting the status of a
+  credential.
+  The other endpoints should only be used by the issuer. They allow to query based on index or correlation ids of individual entries within a statuslist. For privacy
+  reasons/leakage these endpoints should not be exposed to Relying Parties.
+
+<Note>We have [exercises](/exercises/status-list/status-list-exercises) that progressively let you use the REST API, understanding the process better in each step. You can try these after first reading this page to understand the concepts</Note>

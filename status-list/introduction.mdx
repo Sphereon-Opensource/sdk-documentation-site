@@ -1,0 +1,362 @@
+---
+title: Introduction
+description: 'Status List concepts and introduction'
+---
+<img className="block dark:hidden" src="/logo/light.svg" alt="Sphereon" />
+  <img className="hidden dark:block" src="/logo/dark.svg" alt="Sphereon" />
+
+<Note>We have [exercises](/exercises/status-list/status-list-exercises) that progressively let you use the REST API, understanding the process better in each step. You can try these after first reading this page to understand the concepts</Note>
+
+
+# Background
+In today's digital landscape, ensuring the validity and trustworthiness of digital credentials (like certificates, IDs, or tokens) is more critical than ever. One of the key
+challenges is keeping track of whether these credentials or tokens are active, revoked, suspended, or in any other state that affects their trust status. This is where status lists
+come into play.
+
+At its core, a status list is an indexed collection where each position in the list corresponds to a particular digital credential or token. The value at that index indicates the
+status of that item—for example, whether it is active or revoked. The innovation of using an index-based approach lies in its efficiency: instead of storing individual status
+records for each credential, a single, compact list can capture the state of many items.
+
+There are two major specifications supported by our SDK. Both define how these status lists should be constructed and used:
+
+* **W3C Status List v2021:**
+
+  This specification is deprecated now and replaced by BitStringStatusList, which we do not support yet. It represents the status list as a Verifiable Credential Data Model (VCDM)
+  1.1 credential, using a simple binary
+  system (typically “0” for active and “1” for revoked or suspended) to indicate the status of each indexed credential.
+
+* **OAuth Status List (Token Status List):**
+
+  Targeting OAuth tokens, this specification extends the idea by allowing for more than just a binary state. It supports different bit sizes per entry, which means a token can have
+  multiple statuses (such as active, suspended, revoked, or other custom states). Moreover, the OAuth status list can be represented in various formats—most notably as a JSON Web
+  Token (JWT) or using Concise Binary Object Representation (CBOR). It can be used with Verifiable Credentials Data Model 1.1/2.0 credentials, JWTs, SD-JWTs.
+
+Both approaches share the common goal of efficiently and securely managing status information while also ensuring that the process of checking a credential's or token’s status
+respects user privacy. A particularly interesting aspect of these systems is a concept known as herd privacy, which protects the privacy of individual status queries.
+
+In the sections that follow, we’ll delve deeper into the details of each specification, the formats they use, how herd privacy is implemented, and the process by which relying
+parties (RPs) or digital wallets check the status of a credential or token. At the end you will find an example and the links to the specifications.
+
+# Detailed explanation of Status List Concepts
+
+## Representations and Formats
+
+### W3C Status List v2021
+
+* **Representation as a VCDM 1.1 Credential:**
+  The W3C Status List v2021 is issued as a Verifiable Credential, following the Verifiable Credential Datamodel 1.1. This means that the status list is not just a raw data
+  structure—it is a
+  cryptographically signed document that includes:
+    - **Metadata:** Information about the issuer, issuance date, and other contextual details.
+    - **Payload:** A binary bit array where each bit represents the status of a specific digital credential. Typically, a “0” indicates that the credential is active, while a “1”
+      signals
+      that it has been revoked.
+    - **Linkage:** When a digital credential is issued, it includes a pointer (such as a URL along with a statusListIndex) that directs verifiers to the corresponding bit in this
+      status
+      list. This establishes a verifiable link between the credential and its current status.
+
+### OAuth (Token) Status List
+
+* Flexible Representations in JWT and CBOR:
+  The OAuth Status List is designed for managing the status of tokens in the OAuth ecosystem. Unlike the binary-only approach of Status List v2021, the OAuth status list:
+    * **Supports Multi-Valued Statuses:**
+      Each token’s status can be represented using a number of bits sufficient to capture various states beyond simply active or revoked. For example, additional states such as
+      “suspended” or “under review” can be encoded.
+    * **Multiple Encoding Formats:**
+        * **JWT (JSON Web Token):**
+          The status list can be encapsulated as a JWT, which integrates well with existing OAuth infrastructures and supports robust cryptographic verification.
+        * **CBOR (Concise Binary Object Representation):**
+          Alternatively, CBOR can be used for scenarios where a compact, binary encoding is preferable—especially in environments with limited bandwidth or processing power.
+
+## Herd Privacy: Safeguarding Query Confidentiality
+
+A significant design feature of both the W3C Status List v2021 and the OAuth Status List is herd privacy. This concept ensures that when a party (such as a relying party or digital
+wallet) checks the status of a credential or token, the privacy of query and thus the associated credential is maintained.
+
+### How Herd Privacy Works
+
+* **Bulk Retrieval of the Status List:**
+  When an RP or wallet needs to verify a credential's status, it doesn't send a query for a specific index. Instead, it retrieves the entire status list from the hosting server.
+
+* **Local Lookup:**
+  Once the complete list is downloaded, the verifier uses the provided statusListIndex (embedded within the credential or token) to perform a local lookup. This means the status
+  check happens entirely on the client side.
+
+* **Privacy Preservation:**
+  Because every verifier fetches the same complete list, the server hosting the status list never knows which particular index (or credential/token) is being checked. All queries
+  look identical from the server’s perspective, effectively blending individual lookups into a “herd” of requests.
+
+## How a Relying Party or Wallet Performs a Status Check
+
+The process for checking the status of a credential or token is defined. Here’s a step-by-step outline of how this is typically accomplished:
+
+1. **Reference in the Issued Credential/Token:**
+
+   Every digital credential or token includes metadata that points to its corresponding status list:
+
+    * A reference URL indicates where the status list can be fetched.
+    * A status list index specifies the exact position within the list that holds the status information for that credential or token.
+2. **Fetching the Entire Status List:**
+
+   The RP or wallet downloads the full status list from the provided URL. This is crucial for maintaining herd privacy since it prevents the server from knowing which specific
+   index
+   is of interest.
+
+3. **Local Status Lookup:**
+
+   After downloading the list:
+
+    * For a Status List v2021 credential, the verifier checks the bit at the specified index—interpreting “0” as active and “1” as revoked.
+    * For an OAuth Status List token, the verifier examines the multi-bit value at the designated index, interpreting it according to the defined status schema (which might include
+      values for suspended, active, revoked, etc.).
+
+4. **Cryptographic Verification:**
+
+   The integrity and authenticity of the status list are ensured by cryptographic signatures:
+
+    * The VCDM-based status list for Status List v2021 is signed to confirm its validity.
+    * JWTs or CBOR representations used in OAuth Status Lists are similarly secured through established cryptographic methods, ensuring that the data has not been tampered with.
+
+## Linking Issued Credentials to the Status List
+
+A fundamental aspect of both specifications is the clear, verifiable linkage between an issued credential (or token) and its corresponding status list:
+
+* **Status List Reference in the Credential:**
+
+  When a credential is issued, it contains a reference (often a URL) pointing to the status list that governs its revocation or status.
+
+* **Status List Index:**
+
+  Alongside the URL, the credential includes an index value (e.g., statusListIndex) that tells the verifier exactly where in the status list the status for this particular
+  credential
+  is stored.
+
+* **Dynamic Status Management:**
+
+  Should the status of a credential change—say, it is revoked—the issuer updates the relevant bit or multi-bit value in the status list. This dynamic linking ensures that any
+  verifier checking the credential will see the current status as maintained in the central status list.
+
+## Example of an SD-JWT Credential with an OAuthStatusList
+
+Below is an example of an SD‑JWT (Selective Disclosure JWT) credential that incorporates an OAuthStatusList reference. In this example, the credential includes standard JWT header
+and payload sections, with a dedicated field for the OAuth status list that indicates where and at what index the status of the credential can be found. (In a full SD‑JWT
+implementation, additional cryptographic proofs for selective disclosure would accompany this payload.)
+
+### In our example:
+
+- The issuer is at `https://issuer.example.com` and the subject (credential holder) is identified by `did:example:alice`.
+- The credential is an Employee Credential that includes some claims (e.g., `name` and `employeeId`).
+- The `oauth_status` field contains:
+    - **`status_list_credential`**: a URL pointing to an OAuthStatusList encoded as a JWT (or CBOR) that a verifier can download.
+    - **`status_list_index`**: an index (here, `"42"`) indicating the position in that status list that corresponds to this credential’s status.
+
+### JWT Header
+
+```json
+{
+  "alg": "ES256",
+  "typ": "JWT",
+  "kid": "did:example:issuer#key-1"
+}
+```
+
+**Explanation:**
+
+- **`alg`**: Algorithm used for signing (e.g., ES256).
+- **`typ`**: Type of token (JWT).
+- **`kid`**: Key identifier linking to the issuer’s public key.
+
+### JWT Payload
+
+```json
+{
+  "iss": "https://issuer.example.com",
+  "sub": "did:example:alice",
+  "iat": 1618884473,
+  "exp": 1618898073,
+  "vc": {
+    "@context": [
+      "https://www.w3.org/2018/credentials/v1",
+      "https://www.example.com/contexts/employee.jsonld"
+    ],
+    "type": [
+      "VerifiableCredential",
+      "EmployeeCredential"
+    ],
+    "credentialSubject": {
+      "id": "did:example:alice",
+      "name": "Alice Doe",
+      "employeeId": "EMP-001"
+    }
+  },
+  "oauth_status": {
+    "status_list_credential": "https://status.example.com/oauthstatuslist.jwt",
+    "status_list_index": "42"
+  },
+  "sd_claims": {
+    "credentialSubject": {
+      "employeeId": {
+        "nonce": "randomNonce123",
+        "salt": "randomSalt456"
+      }
+    }
+  }
+}
+```
+
+**Explanation:**
+
+- **`iss`, `sub`, `iat`, `exp`**: Standard JWT claims (issuer, subject, issued-at, and expiration times).
+- **`vc`**: The verifiable credential payload that follows the VCDM (Verifiable Credential Data Model) structure. It includes:
+    - **`@context`** and **`type`** fields to define the credential’s schema.
+    - **`credentialSubject`** containing specific claims about the subject (here, Alice’s identity and employee ID).
+- **`oauth_status`**:
+    - **`status_list_credential`** is a pointer (typically a URL) to where the OAuthStatusList is hosted.
+    - **`status_list_index`** is the specific index in that list corresponding to this credential’s status.
+- **`sd_claims`**: Contains additional data used for selective disclosure (in this case, supporting the disclosure of the `employeeId` claim with associated nonce and salt values).
+  The holder can later reveal these along with the original claim value.
+
+### Selective Disclosure Proofs
+
+In a full SD‑JWT implementation, a separate section (or an accompanying data structure) contains the cryptographic proofs required to verify selectively disclosed claims. These
+proofs typically include the nonces, salts, and any additional information needed to validate the claims without revealing the entire credential.
+
+For brevity, this example does not include the full proof set, but in practice, these would be attached (or exchanged during presentation) as additional segments alongside the
+compact JWT.
+
+### Compact SD‑JWT Format
+
+In compact form, an SD‑JWT is typically represented as three dot‑separated Base64URL‑encoded segments:
+
+```php-template
+<BASE64URL-ENCODED-HEADER>.<BASE64URL-ENCODED-PAYLOAD>.<BASE64URL-ENCODED-SD-PROOFS>
+```
+
+For example (line breaks added for clarity):
+
+```arduino
+eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6ImRpZDpleGFtcGxlOmlzc3VlciNrZXktMSJ9.
+eyJpc3MiOiJodHRwczovL2lzc3Vlci5leGFtcGxlLmNvbSIsInN1YiI6ImRpZDpleGFtcGxlOmFsaWNlIiwiaWF0IjoxNjE4ODg0NDczLCJleHAiOjE2MTg4OTgwNzMsInZjIjoiQ29udGV4dCIsInZlciI6eyJAY29udGV4dCI6WyJodHRwczovL3d3dy53My5vcmcvY3JlZGVudGlhbHMvdjEiLCJodHRwczovL3d3dy5leGFtcGxlLmNvbS9jb250ZXh0cy9lbXBsb3llZS5qc29uZGRsIl0sInR5cGUiOlsiVmVyaWZpYWJsZUNyZWRlbnRpYWwiLCJFbXBsb3llZUNyZWRlbnRpYWwiXSwiY3JlZGVudGlhbFN1YmplY3QiOnsiaWQiOiJkaWQ6ZXhhbXBsZTphbGljZSIsIm5hbWUiOiJBbGljZSBEb2UiLCJlbXBsb3llZUlkIjoiRU1QLTAwMSJ9fSwib2F1dGhfc3RhdHVzIjp7InN0YXR1c19saXN0X2NyZWRlbnRpYWwiOiJodHRwczovL3N0YXR1cy5leGFtcGxlLmNvbS9vYXV0aHN0YXR1c2xpc3Quan3QiLCJzdGF0dXNfbGlzdF9pbmRleCI6IjQyIn0sInNkX2NsYWltcyI6eyJjcmVkZW50aWFsU3ViamVjdCI6eyJlbXBsb3llZUlkIjp7Im5vbmNlIjoiYWJjMTIzIiwic2FsdCI6ImRlZjQ1NiJ9fX19.
+<SD-PROOFS>
+```
+
+**Note:** In a real-world implementation, all segments would be valid Base64URL‑encoded strings, and the `<SD-PROOFS>` part would contain the actual selective disclosure proofs.
+
+---
+
+## How a Verifier Uses the OAuthStatusList
+
+When a verifier (e.g., a wallet or RP) receives this SD‑JWT credential, it performs the following steps:
+
+1. **Fetch the OAuthStatusList**:
+    - Using the URL in `oauth_status.status_list_credential` (e.g., `https://status.example.com/oauthstatuslist.jwt`), the verifier downloads the entire status list. This bulk
+      download approach ensures herd privacy—the status list host cannot tell which specific index is being queried.
+
+2. **Lookup the Credential’s Status**:
+    - The verifier then looks up the entry at index `"42"` (from `oauth_status.status_list_index`) in the downloaded status list. Depending on the schema defined by the
+      OAuthStatusList, the multi-bit value at that index indicates whether the credential (or token) is active, suspended, revoked, etc.
+
+3. **Selective Disclosure Processing**:
+    - If additional claims (like `employeeId`) are required for verification, the verifier will request or process the associated selective disclosure proofs, ensuring that only
+      the necessary information is revealed.
+
+# To conclude
+
+Status lists offer an efficient, scalable, and privacy-preserving method for managing the state of digital credentials and tokens. The W3C Status List v2021, with its simple binary
+representation in a VCDM 1.1 credential, is ideal for scenarios where a clear active/revoked status is sufficient. In contrast, the OAuth Status List provides enhanced flexibility,
+allowing for multiple states through variable bit sizes and supporting representations in JWT or CBOR.
+
+Central to both models is the principle of herd privacy—by requiring that verifiers download the entire status list and perform local lookups, these systems ensure that the party
+hosting the list cannot deduce which specific credential or token is being checked. This, coupled with the robust linking between credentials and their status list entries, creates
+a framework that is not only secure and efficient but also respectful of user privacy.
+
+Whether you are building systems for digital identity management, token-based authentication, or any scenario where credential validity is paramount, understanding these concepts
+lays the groundwork for designing resilient, interoperable, and privacy-preserving solutions.
+
+# Links
+
+## 1. W3C Status List v2021
+
+**Description:**  
+The W3C Status List v2021 specification provides a method to manage the status (e.g., active, revoked) of digital credentials. It employs an index-based mechanism in which each
+position in a bit array represents the state of a credential. Typically, a "0" indicates an active credential and a "1" indicates a revoked one. This status list is issued as a
+Verifiable Credential using the Verifiable Credential Data Model (VCDM).
+
+**Key Points:**
+
+- Utilizes a binary representation (active vs. revoked).
+- Integrated as a Verifiable Credential using W3C’s data model (VCDM 1.1).
+- Designed for efficient revocation checking.
+
+**Link:**  
+[W3C Status List v2021](https://www.w3.org/TR/2023/WD-vc-status-list-20230427/)
+
+---
+
+## 2. OAuth Status List (Token Status List)
+
+**Description:**  
+The OAuth Status List (also known as Token Status List) is designed for managing the status of OAuth tokens. Unlike the binary approach in the W3C Status List, this specification
+allows for multiple status values (e.g., active, suspended, revoked) by supporting different bit sizes per entry. The OAuth status list can be represented in different encoding
+formats, notably as a JSON Web Token (JWT) or using Concise Binary Object Representation (CBOR).
+
+**Key Points:**
+
+- Supports multi-valued statuses beyond a simple binary flag.
+- Can be encoded as a JWT or in CBOR for compactness.
+- Useful for complex token lifecycle states.
+
+**Link:**  
+[OAuth Status List (IETF Draft)](https://datatracker.ietf.org/doc/draft-ietf-oauth-status-list/)
+
+---
+
+## 3. IETF SD-JWT VC (Selective Disclosure JWT for Verifiable Credentials)
+
+**Description:**  
+SD-JWT (Selective Disclosure JWT) is an approach that allows credential holders to reveal only selected parts of their credentials. In the context of Verifiable Credentials (VCs),
+SD-JWT enables selective disclosure by embedding cryptographic proofs alongside the JWT. This supports privacy-preserving presentations where only necessary claims are shared.
+
+**Key Points:**
+
+- Enables selective disclosure of claims in a JWT.
+- Provides a way to balance privacy with verifiability.
+- Currently being standardized within the IETF.
+
+**Link:**  
+[IETF SD-JWT (Selective Disclosure JWT) Draft](https://datatracker.ietf.org/doc/draft-ietf-oauth-selective-disclosure-jwt/)
+
+---
+
+## 4. W3C Verifiable Credentials Data Model (VCDM) 1.1
+
+**Description:**  
+The W3C Verifiable Credentials Data Model (VCDM) 1.1 is the framework that defines how digital credentials are issued, presented, and verified. It provides the data structures and
+protocols that underpin the creation and usage of verifiable credentials, including how status lists (like the W3C Status List v2021) are incorporated.
+
+**Key Points:**
+
+- Establishes a standard data model for verifiable credentials.
+- Ensures interoperability among credential issuers, holders, and verifiers.
+- Forms the basis for integrating status information into credentials.
+
+**Link:**  
+[W3C VCDM 1.1](https://www.w3.org/TR/vc-data-model/)
+
+---
+
+## 5. W3C Verifiable Credentials Data Model (VCDM) 2.0
+
+**Description:**  
+VCDM 2.0 is the forthcoming evolution of the Verifiable Credentials Data Model. It aims to address new requirements, improve flexibility, and incorporate lessons learned from the
+deployment of VCDM 1.1. While still under development, VCDM 2.0 is expected to further enhance the ecosystem of verifiable credentials and related technologies.
+
+**Key Points:**
+
+- Represents the next iteration of the verifiable credentials data model.
+- Expected to include enhancements and additional features.
+- Currently under development; specifications may evolve.
+
+**Link:**  
+[W3C VCDM 2.0](https://www.w3.org/TR/vc-data-model-2.0/)  
+*(Note: This link points to the current draft or working version. Check the W3C website for the latest updates.)*

@@ -1,0 +1,131 @@
+---
+title: Presentation exercises
+description: 'OID4VP Presentation exercises and explanation'
+---
+
+
+## Prerequisites
+
+In the below exercises we will be creating credential offers in different ways. Please read the
+[OID4VP introduction](/oid4vc/siop-oid4vp/introduction) page first that explains the concept of credential offers.
+
+<Note>Please make sure to have read the [OID4VP introduction](/oid4vc/siop-oid4vp/introduction) introduction first!</Note>
+<Note>These exercises assume you have installed a wallet that is capable of OID4VCI and compatible in specification version with our Issuer software. If in doubt we suggest to use
+    the Sphereon Wallet from the Android/iOS stores</Note>
+
+<Info>We suggest to use a tool like Postman or curl to perform these exercises and examples. Although we provide an integrated UI in these docs and links to our swagger hub, we
+    are also developers and in our experience new learnings stick better whilst actually doing instead of clicking.</Info>
+
+# Authorization request and session initiation
+In the below exercises you will learn how to present credentials using an Authorization Request by `value` and by `reference`. You will actually present using a mobile wallet!
+
+## Exercise 1: Credential offer by value, using pre-authorized_code
+<Note>Please make sure to have performed the [OID4VCI exercises](/exercises/oid4vc/oid4vci/credential-offer-exercises) first, so your wallet has credentials it can present to the Relying Party</Note>
+
+Please use the `create-authentication-request` [API (docs)](/oid4vc/oid4vp/api-reference/backend/create-authoirzation-request) or
+[API (swaggerhub)](https://app.swaggerhub.com/apis/SphereonInt/OID4VP/0.1.0#/Backend/create-authorization-request) to create a so-called Authentication Request by providing a `presentation definition`.
+
+You will need to provide a `definitionId` for instance with value `WoonplaatsverklaringVCJWT` as path parameter, given every OID4VP Authorization Request will internally use a Presentation Definition (or DCQL query in the future)
+
+The expected outcome should be an HTTP response with something like:
+
+```json
+{
+  "correlationId": "2cc29d1c-7d00-46f8-b0ae-b4779d2ff143",
+  "definitionId": "WoonplaatsverklaringVCJWT",
+  "authRequestURI": "openid-vc://?request_uri=https://example.com/siop/definitions/WoonplaatsverklaringVCJWT/auth-requests/b5cab09e-7c08-42c9-870b-c2b83a2c8acd",
+  "authStatusURI": "https://example.com/webapp/auth-status"
+}
+```
+
+The above authRequestURI is the actual URI value that can be used in a link or QR code (more on that later). A wallet is using that value to start the presentation process with the Relying Party. This value is always by reference.
+
+<Info>Contrary to the OID4VCI API where you can define whether the request should be by value or by reference, for OID4VP we only allow to create by reference. The reason is that too much data needs to go into the QR code, making it unusable by value. Our libraries and wallets however do support by reference</Info>
+
+The authStatusURI is the URI you need to use to track the status progress over time (next exercise). You will use the correlationId in that process to get the correct session.
+
+<Note>Copy the response payload, as we will use it later</Note>
+
+## Exercise 2: Create a QR code from the URI and scan it with a mobile wallet
+<Info>Unfortunately the OID4VP REST API currently does not have built-in QR code generation support like the OID4VCI API. We will add that soon though.</Info>
+
+In a lot of situations your wallet is on a mobile device, while you might be visiting the relying party website using another device like a tablet or desktop computer. This is the so called cross-device flow. AAlthough new mechanisms are being developer whereby your mobile wallet can register with your browser, right now an Authorization Request is being conveyed using a QR code.
+This is a short exercise to show that all you really need to do is display the request value in a QR code to really start the interaction with the relying party from a mobile device.
+
+Take the outcome of Exercise 1 and copy the value of the `authRequestURI` field from the JSON response. So do not copy the whole JSON response. You should only copy the value that starts with `openid-vc://?request_uri=....` also minus the quotes in front and at the end.
+
+Go to an online QR code generator like: https://www.qr-code-generator.com/ and past the request value. You should get a QR code back. Below is an example QR code. Obviously yours will differ.
+
+![authorization request](authorization-request-qr.png)
+
+<Warning>The above example QR will not work as the relying party does not know about that session anymore!</Warning>
+
+Now take you mobile wallet application and make sure you are logged in. Typically the wallet app will have a QR code scanning functionality. You can use that to initiate the presentation process. Most wallets will also register with the Operating System, meaning you can also scan the QR code using your regular photo/camera app instead. Then depending on your brand the wallet will open, or you will get a choice which wallet app to open.
+Finish the presentation process on your mobile wallet, to see that all it took was creating a URI and displaying that as a QR code.
+
+
+
+
+## Exercise 3: Protect the QR code with a transaction code?
+In the Issuer exercises we protected the QR code with a transaction/pin code. This is not possible in the OID4VP flow. Could you write down why that is? What are the big differences between the 2 flows and why was the pincode needed?
+
+# Session status
+Up until now we only have been using one endpoint to start the presentation process from the API and then we received the request to present credentials in our wallet. Typically you will have a portal or web-app that is guiding the user. This is the case both in the same-device as cross-device flow. When you create a web frontend for the presentation process, you will want your frontend to react to states changes in the presentation process, to inform the user about errors, success etc.
+
+Not only that, the goal is to eventually receive one or more presentations containing the credentials from the wallet holder.
+
+The `create-authrozation-request` endpoint we used above internally creates a session. The session contains all kind of information needed by the relying party; one of the important properties it has in the session is the `state`. The state can have the following values:
+
+| state | Description |
+|-------|-------------|
+| created | A Authorization Request is created. This is the initial state |
+| sent | When the wallet has retrieved the Authorization Request by reference using the URI provided in the link |
+| recieved | When the Relying Party received the presentation(s) from the wallet |
+| verified | When the Relying Party has verified that the presentation(s) were cryptographicaly correct and were satisfying the credential queries (Presentation Exchange, DCQL) |
+| error | An error occured |
+
+<Note>The above states are more or less in order. The received/verified and error are mutually exclusive.</Note>
+
+
+## Exercise 4: Get the initial status
+In this exercise we will retrieve the initial status of the credential offer. Without a wallet involved. The state will be `OFFER_CREATED`
+
+Please use the `get-authorization-status` [API (docs)](/oid4vc/siop-oid4vp/api-reference/backend/get-authorization-status) or
+[API (swaggerhub)](https://app.swaggerhub.com/apis/SphereonInt/OID4VP/0.1.0#/Backend/get-authorization-status) to check the progress of the session using the `correlationId` value you supplied during session creation above and `definitionId` with the value you previously used in the path. You could also create a new session as explained in the above exercises.
+
+You should get a response like this:
+
+```json
+{
+  "status": "created",
+  "correlationId": "2cc29d1c-7d00-46f8-b0ae-b4779d2ff143",
+  "definitionId": "WoonplaatsverklaringVCJWT",
+  "lastUpdated": 1706515200000
+}
+```
+The `status` is from the table above.
+
+
+
+
+## Exercise 5: Check the status when the wallet has presented
+In this exercise we will continue where the previous exercise ended. We will use the wallet to scan the QR code. Make sure that you create the QR code from the offer, or use the QR code the API supplied (see earlier exercises in case of doubt).
+Scan the QR code with the mobile wallet. Once the wallet is in the accept/decline screen, you should see the state as `CREDENTIAL_ISSUED`
+
+Please use the `credential-offer-status` [API (docs)](/oid4vc/oid4vci/issuer/api-reference/backend/credential-offer-status) or
+[API (swaggerhub)](https://app.swaggerhub.com/apis/SphereonInt/OID4VCI/0.1.1#/Backend/post_webapp_credential_offer_status) to check the progress of the session using the `pre-authorized_code` value you supplied during credential offer creation.
+
+You should get a response like this:
+
+```json
+{
+  "createdAt":1739044208549,
+  "lastUpdatedAt":1739044208549,
+  "status":"CREDENTIAL_ISSUED"
+}
+```
+The `status` is from the table above.
+
+The reason the status is CREDENTIAL_ISSUED is because it actually is issued from the perspective of the Issuer at this point. The wallet does not know (yet) whether the holder will accept or decline the credential.
+If you now accept the credential in the wallet the status value will move to `NOTIFICATION_CREDENTIAL_ACCEPTED` if you call the API, but only if the notification endpoint is enabled and only if the wallet has both implemented that feature and enabled it.
+
