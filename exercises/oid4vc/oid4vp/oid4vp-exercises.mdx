@@ -22,7 +22,7 @@ In the below exercises you will learn how to present credentials using an Author
 ## Exercise 1: Credential offer by value, using pre-authorized_code
 <Note>Please make sure to have performed the [OID4VCI exercises](/exercises/oid4vc/oid4vci/credential-offer-exercises) first, so your wallet has credentials it can present to the Relying Party</Note>
 
-Please use the `create-authentication-request` [API (docs)](/oid4vc/oid4vp/api-reference/backend/create-authoirzation-request) or
+Please use the `create-authorization-request` [API (docs)](/oid4vc/siop-oid4vp/api-reference/backend/create-authorization-request) or
 [API (swaggerhub)](https://app.swaggerhub.com/apis/SphereonInt/OID4VP/0.1.0#/Backend/create-authorization-request) to create a so-called Authentication Request by providing a `presentation definition`.
 
 You will need to provide a `definitionId` for instance with value `WoonplaatsverklaringVCJWT` as path parameter, given every OID4VP Authorization Request will internally use a Presentation Definition (or DCQL query in the future)
@@ -112,8 +112,8 @@ The `status` is from the table above.
 In this exercise we will continue where the previous exercise ended. We will use the wallet to scan the QR code. Make sure that you create the QR code from the offer, or use the QR code the API supplied (see earlier exercises in case of doubt).
 Scan the QR code with the mobile wallet. Once the wallet is in the accept/decline screen, you should see the state as `CREDENTIAL_ISSUED`
 
-Please use the `credential-offer-status` [API (docs)](/oid4vc/oid4vci/issuer/api-reference/backend/credential-offer-status) or
-[API (swaggerhub)](https://app.swaggerhub.com/apis/SphereonInt/OID4VCI/0.1.1#/Backend/post_webapp_credential_offer_status) to check the progress of the session using the `pre-authorized_code` value you supplied during credential offer creation.
+Please use the `credential-offer-status` [API (docs)](/oid4vc/oid4vci/api-reference/backend/get-credential-offer-status) or
+[API (swaggerhub)](https://app.swaggerhub.com/apis/SphereonInt/OID4VCI/0.1.1#/Backend/get-credential-offer-status) to check the progress of the session using the `pre-authorized_code` value you supplied during credential offer creation.
 
 You should get a response like this:
 

@@ -38,7 +38,7 @@
       "isDefaultHidden": true,
       "name": "Issuance (OID4VCI) OpenAPI",
       "url": "oid4vci-api-reference",
-      "openapi": "/oid4vc/oid4vci/api-reference/openapi.json"
+      "openapi": "/oid4vc/oid4vci/api-reference/openapi.yaml"
     },
     {
       "isDefaultHidden": true,
@@ -95,7 +95,7 @@
               "group": "OpenAPI",
               "pages": [
                 "oid4vc/oid4vci/api-reference/backend/create-credential-offer",
-                "oid4vc/oid4vci/api-reference/backend/get-credential-issuance-status",
+                "oid4vc/oid4vci/api-reference/backend/get-credential-offer-status",
                 "oid4vc/oid4vci/api-reference/backend/get-credential-offer"
               ]
             },
@@ -118,17 +118,22 @@
             {
               "group": "OpenAPI",
               "pages": [
-                "oid4vc/siop-oid4vp/api-reference/backend/create-authentication-request",
-                "oid4vc/siop-oid4vp/api-reference/backend/get-authentication-status",
-                "oid4vc/siop-oid4vp/api-reference/backend/remove-authentication-request-state",
+                "oid4vc/siop-oid4vp/api-reference/backend/create-authorization-request",
+                "oid4vc/siop-oid4vp/api-reference/backend/get-authorization-status",
+                "oid4vc/siop-oid4vp/api-reference/backend/remove-authorization-request",
                 "oid4vc/siop-oid4vp/api-reference/definitions/get-presentation-definitions",
                 "oid4vc/siop-oid4vp/api-reference/definitions/get-presentation-definition-by-id"
               ]
             },
-            "oid4vc/siop-oid4vp/steps",
-            "oid4vc/siop-oid4vp/op-an-rp-setup",
-            "oid4vc/siop-oid4vp/authorization",
-            "oid4vc/siop-oid4vp/interactions"
+            {
+              "group": "Development",
+              "pages": [
+                "oid4vc/siop-oid4vp/development/steps",
+                "oid4vc/siop-oid4vp/development/op-an-rp-setup",
+                "oid4vc/siop-oid4vp/development/authorization",
+                "oid4vc/siop-oid4vp/development/interactions"
+              ]
+            }
           ]
         }
       ]

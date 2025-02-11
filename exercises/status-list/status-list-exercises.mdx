@@ -136,8 +136,8 @@ As mentioned above. Please make sure to have performed the [OID4VCI exercises](/
 
 Now we are going to issue a new credential that uses the status list you created above. We will let it automatically assign a random status list index to the credential once issued, to ensure herd privacy (see introduction)
 
-Please use the `create-credential-offer` [API (docs)](/oid4vc/oid4vci/issuer/api-reference/backend/create-credential-offer) or
-[API (swaggerhub)](https://app.swaggerhub.com/apis/SphereonInt/OID4VCI/0.1.1#/Backend/post_webapp_credential_offers) to create a simple so-called credential offer by value using a `pre-authorized_code` grant with `qrCodeOpts`.
+Please use the `create-credential-offer` [API (docs)](/oid4vc/oid4vci/api-reference/backend/create-credential-offer) or
+[API (swaggerhub)](https://app.swaggerhub.com/apis/SphereonInt/OID4VCI/0.1.1#/Backend/create-credential-offer) to create a simple so-called credential offer by value using a `pre-authorized_code` grant with `qrCodeOpts`.
 
 This means using an `offerMode` of `"VALUE"` and a `grants` object containing an object of `urn:ietf:params:oauth:grant-type:pre-authorized_code` with a  `pre-authorized_code` value of your choosing. Use a `credential_configuration_id` with value `"PensionSdJwt"` and add a `"qrCodeOpts"` object with value `{"size": 400}` and a `statusList` array looking like this:
 
