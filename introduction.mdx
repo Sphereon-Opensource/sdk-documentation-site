@@ -1,63 +1,77 @@
 ---
 title: Welcome
-description: 'Welcome to the Sphereon documentation'
+description: 'Welcome to the Sphereon SDK documentation'
 ---
 
-  <img className="block dark:hidden" src="/logo/light.svg" alt="Sphereon" />
-  <img className="hidden dark:block" src="/logo/dark.svg" alt="Sphereon" />
+<img className="block dark:hidden" src="/logo/light.svg" alt="Sphereon"/>
+  <img className="hidden dark:block" src="/logo/dark.svg" alt="Sphereon"/>
 
 ## Introductions
 
 These are introductions into Issuance and Presentation of credentials using the OID4VC and OID4VP protocols
 
 <CardGroup cols={2}>
-  <Card
-    title="Credential Issuance OID4VCI"
-    icon="pen-to-square"
-    href="/oid4vc/oid4vci/introducation"
-  >
-    Get your docs set up locally for easy development
-  </Card>
-  <Card
-    title="Credential Presentation OID4VP"
-    icon="image"
-    href="oid4vc/siop-oid4vp/introduction"
-  >
-    Preview your changes before you push to make sure they're perfect
-  </Card>
+    <Card
+        title="Credential Issuance OID4VCI"
+        icon="image"
+        href="oid4vc/oid4vci/introduction"
+    >
+        Issuing credentials to a wallet using OID4VCI
+    </Card>
+    <Card
+        title="Credential Presentation OID4VP"
+        icon="image"
+        href="oid4vc/siop-oid4vp/introduction"
+    >
+        Presenting credentials to a Relying Party using OID4VP
+    </Card>
+    <Card
+        title="Status lists"
+        icon="stars"
+        href="status-list/introduction"
+    >
+        OAuth and other status lists to revoke credentials
+    </Card>
+    <Card
+        title="Credential Design"
+        icon="palette"
+        href="oid4vc/oid4vci/credential-design/credential-branding"
+    >
+        Credential branding and claims design
+    </Card>
 </CardGroup>
 
-## Make it yours
+## Exercises
 
-Update your docs to your brand and add valuable content for the best user conversion.
+Below are some exercise that progressively take you through some concepts. We suggest to execute them in order
 
 <CardGroup cols={2}>
-  <Card
-    title="Customize Style"
-    icon="palette"
-    href="https://mintlify.com/docs/settings/global"
-  >
-    Customize your docs to your company's colors and brands
-  </Card>
-  <Card
-    title="Reference APIs"
-    icon="code"
-    href="https://mintlify.com/docs/api-playground/openapi"
-  >
-    Automatically generate endpoints from an OpenAPI spec
-  </Card>
-  <Card
-    title="Add Components"
-    icon="screwdriver-wrench"
-    href="https://mintlify.com/docs/components/accordion"
-  >
-    Build interactive features and designs to guide your users
-  </Card>
-  <Card
-    title="Get Inspiration"
-    icon="stars"
-    href="https://mintlify.com/customers"
-  >
-    Check out our showcase of our favorite documentation
-  </Card>
+    <Card
+        title="1. Credential Design"
+        icon="palette"
+        href="exercises/oid4vc/oid4vci/credential-design-exercises"
+    >
+        Start issuing credentials using OID4VCI and the REST API
+    </Card>
+    <Card
+        title="2. Credential Issuance"
+        icon="code"
+        href="exercises/oid4vc/oid4vci/credential-offer-exercises"
+    >
+        Start issuing credentials using OID4VCI and the REST API
+    </Card>
+    <Card
+        title="3. Credential Presentation"
+        icon="code"
+        href="exercises/oid4vc/oid4vp/oid4vp-exercises"
+    >
+        Start presenting credentials using OID4VP and the REST API
+    </Card>
+    <Card
+        title="4. Status List management"
+        icon="code"
+        href="exercises/status-list/status-list-exercises"
+    >
+        Start presenting credentials using OID4VP and the REST API
+    </Card>
 </CardGroup>

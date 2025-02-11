@@ -86,6 +86,7 @@
         "changelogs/oid4vc/changelog",
         "exercises/oid4vc/oid4vci/credential-offer-exercises",
         "exercises/oid4vc/oid4vp/oid4vp-exercises",
+        "exercises/oid4vc/oid4vci/credential-design-exercises",
         {
           "group": "Issuance (OID4VCI)",
           "pages": [
@@ -99,8 +100,13 @@
                 "oid4vc/oid4vci/api-reference/backend/get-credential-offer"
               ]
             },
-
-            "oid4vc/oid4vci/credential-branding",
+            {
+              "group": "Credential Design",
+              "pages": [
+                "oid4vc/oid4vci/credential-design/credential-branding",
+                "oid4vc/oid4vci/credential-design/credential-claims"
+              ]
+            },
             {
               "group": "Development",
               "pages": [
