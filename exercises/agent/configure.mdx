@@ -1,0 +1,724 @@
+---
+title: Configure agent
+description: 'Configure the agent'
+---
+
+<Warning>If you haven't already done so, please make sure to [install the agent](/exercises/agent/setup-development) first from sources</Warning>
+
+# 1. Copy the configuration folder to a location of your choosing
+
+Now it is time to configure the agent. First we are going to copy the examples configuration directory called `packages/agent/conf/examples` to
+another directory
+of choice. For instance into `packages/agent/conf/exercises`. This allows you to always compare your changes against the original example folder. The
+rest of
+this page assumes you are using the folder `packages/agent/conf/exercises`.
+
+<Info>Although you can configure the agent from configuration yaml files, from code and using REST APIs, this project is using a few folders to make
+it
+easier to quickly experiment with settings. The files in the `conf` folder will always overwrite data in de database</Info>
+
+# Global replace to ensure that your ngrok is being used everywhere
+
+We will look into the configuration files. But firt make sure that in the entire conf folder you globally replace this value
+
+`http://my-hostname-or-ip:5010` into `https://your-ngrok-url` from [setup development](/exercises/agent/setup-development)
+
+The reason is that the wallet will need to access your agent. In order to do that you need to be on the same network, or you need to have a solution
+like ngrok that forwards the URL to your local agent.
+
+# 2. Let's have a look into the `dids` folder
+
+The `dids` folder contains any DIDs you want created during the start of the agent. See [DIDs](/concepts/dids) on the documentation site for more
+background about DIDs. Every file in the folder with a `.json` extension will result in a key being created with a DID associated. That could be did:
+jwk, did:key, did:web or did:ebsi (more advanced). Open the single file in the folder, to see the structure
+
+# 3. The OID4VCI folder
+
+The OID4VCI folders contain files related to the OpenID for Verifiable Credentials Issuance protocol. The agent supports hosting multiple issuers at
+the same time. The files are split into 2 folders:
+
+1. `oid4vci_options`: This folder is mainly used to link keys or DIDs from the DIDs folder to the configuration. Every file with `.json` extension
+   in there corresponds to a single issuer instance.
+
+## OID4VCI Options file
+
+Let's explain what is in the OID4VCI file by providing an example first:
+
+<Note>The agent supports multiple issuers and relying parties at the same time. However a single issuer or relying party can handle multiple different
+credentials. So there is no need to configure multiple issuers for the exercises.</Note>
+
+```json
+{
+  "correlationId": "http://my-hostname-or-ip:5010/oid4vci",
+  "definitionId": "example",
+  "issuerOpts": {
+    "didOpts": {
+      "checkLinkedDomains": "if_present",
+      "identifierOpts": {
+        "identifier": "did:jwk:eyJhbGciOiJFUzI1NiIsInVzZSI6InNpZyIsImt0eSI6IkVDIiwiY3J2IjoiUC0yNTYiLCJ4IjoiVEcySDJ4MmRXWE4zdUNxWnBxRjF5c0FQUVZESkVOX0gtQ010YmdqYi1OZyIsInkiOiI5TThOeGQwUE4yMk05bFBEeGRwRHBvVEx6MTV3ZnlaSnM2WmhLSVVKMzM4In0",
+        "kmsKeyRef": "034c6d87db1d9d597377b82a99a6a175cac00f4150c910dfc7f8232d6e08dbf8d8"
+      }
+    }
+  }
+}
+```
+
+| key                  | explanation                                                                                                                                                                                                                                               |
+|----------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `correlationId`      | The correlationId is used to correlate configuration files belonging together. We suggest to always use http://your-computer-ip/oid4vci                                                                                                                   |
+| `definitionId`       | This is the `definition id`. This value will be exposed in the URL. For instance if your issuer is configured with a base URL of http://192.168.2.90:5010/oid4vci then this specific issuer base url will become http://192.168.2.90:5010/oid4vci/example |
+| `issuerOpts`         | This is an object mainly linking keys and other configuration values to the issuer                                                                                                                                                                        |
+| `checkLinkedDomains` | This option can be ignored as it is for more advanced use cases where a DNS domain is being linked to a DID using the well-known DIDs specification. The `if_present` is a good default. Meaning it will be detected and used automatically if present    |   |
+| `identifierOpts`     | An object linking an identifier and key managed by the agent to the issuer. Every issuer has one key associated an optionally a DID. For exercises we suggest to use DIDs, as keys only would require X.509 certificates.                                 |   |
+| `identifier`         | A DID associated with this issuer. Use one of the DIDs the agent manages. Although the DID comes from the database, typically you would find the value in the `dids` configuration folder                                                                 |
+| `kmsKeyRef`          | This is a key reference from the Key Management system. During startup the agent should recreate any keys configured from the `dids` configuration folder. You would have to use key assoicated with above DID (DIDs can have multiple keys)              |
+
+## The OID4VCI Metadata files
+
+There are 2 types of metadata files for OID4VCI. One is for the integrated Authorization Server, the other is for the actual credential issuer.
+
+### Issuer metadata
+
+The correlationId should correspond to above correlationId. Again use the IP address on your local network.
+
+| key               | explanation                                                                                                                   |
+|-------------------|-------------------------------------------------------------------------------------------------------------------------------|
+| overwriteExisting | Whether the metadata in this configuration file will overwrite any configuration already stored in the agent database or not. |
+| metadata          | The actual metadata that the issuer will expose to wallets. This is data defined in the OID4VCI specification                 |
+| credential_issuer | The URL a wallet will use to access the issuer. See the note about external URLs below
+
+<Warning>All the URL values in here should be externally or network resolvable with a mobile wallet. So do not use localhost or 127.0.0.1 or a local
+network if you wallet is not on the same network. Use ngrok to reverse proxy to your port 5010 and then use that as URL values. You would need to
+update all the URLs in the medata</Warning>
+
+Note that the issuer has 2 credentials configured. You can issue both a regular JWT as well as a SD-JWT.
+
+Example:
+`packages/agent/conf/exercises/example-issuer.json`
+
+```json
+ {
+  "correlationId": "http://my-hostname-or-ip:5010/oid4vci",
+  "overwriteExisting": true,
+  "metadataType": "issuer",
+  "metadata": {
+    "credential_issuer": "http://my-hostname-or-ip/oid4vci",
+    "credential_endpoint": "http://my-hostname-or-ip/oid4vci/credentials",
+    "client_name": "Findynet",
+    "client_uri": "https://findynet.fi",
+    "logo_uri": "https://findynet.fi/wp-content/uploads/2024/02/findynet-logo.png",
+    "tos_uri": "https://sphereon.com/sphereon-wallet-terms-and-conditions",
+    "policy_uri": "https://sphereon.com/sphereon-wallet-privacy-policy",
+    "contacts": [
+      "dev@sphereon.com",
+      "support@sphereon.com"
+    ],
+    "display": [
+      {
+        "name": "Findynet",
+        "description": "Findynet Issuer"
+      }
+    ],
+    "credential_configurations_supported": {
+      "PensionSdJwt": {
+        "format": "vc+sd-jwt",
+        "cryptographic_binding_methods_supported": [
+          "did:web",
+          "did:jwk"
+        ],
+        "cryptographic_suites_supported": [
+          "ES256"
+        ],
+        "display": [
+          {
+            "name": "PensionCredential",
+            "description": "Pension Credential",
+            "background_color": "rgba(0, 0, 0, 0.2)",
+            "text_color": "#FBFBFB",
+            "logo": {
+              "url": "https://findynet.fi/wp-content/uploads/2024/02/findynet-logo.png",
+              "alt_text": "Findynet logo"
+            }
+          },
+          {
+            "locale": "en-US",
+            "name": "PensionCredential",
+            "description": "Residence statement Belastingdienst",
+            "background_color": "rgba(0, 0, 0, 0.2)",
+            "text_color": "#FBFBFB",
+            "logo": {
+              "url": "https://findynet.fi/wp-content/uploads/2024/02/findynet-logo.png",
+              "alt_text": "Findynet logo"
+            }
+          },
+          {
+            "locale": "nl-NL",
+            "name": "PensioenCredential",
+            "description": "Pensioen Credential",
+            "background_color": "rgba(0, 0, 0, 0.2)",
+            "text_color": "#FBFBFB",
+            "logo": {
+              "url": "https://findynet.fi/wp-content/uploads/2024/02/findynet-logo.png",
+              "alt_text": "Findynet logo"
+            }
+          }
+        ],
+        "vct": "PensionSdJwt",
+        "claims": [
+          {
+            "display": [
+              {
+                "description": "Pension Information",
+                "label": "Pension",
+                "lang": "en-US"
+              },
+              {
+                "description": "Pensioeninformatie",
+                "label": "Pension",
+                "lang": "nl-NL"
+              }
+            ],
+            "path": [
+              "Pension"
+            ]
+          },
+          {
+            "display": [
+              {
+                "description": "Start Date",
+                "label": "Start Date",
+                "lang": "en-US"
+              },
+              {
+                "description": "Startdatum",
+                "label": "Start Date",
+                "lang": "nl-NL"
+              }
+            ],
+            "path": [
+              "Pension",
+              "startDate"
+            ]
+          },
+          {
+            "display": [
+              {
+                "description": "End Date",
+                "label": "End Date",
+                "lang": "en-US"
+              },
+              {
+                "description": "Einddatum",
+                "label": "End Date",
+                "lang": "nl-NL"
+              }
+            ],
+            "path": [
+              "Pension",
+              "endDate"
+            ]
+          },
+          {
+            "display": [
+              {
+                "description": "Personal Information",
+                "label": "Person",
+                "lang": "en-US"
+              },
+              {
+                "description": "Persoonlijke Informatie",
+                "label": "Person",
+                "lang": "nl-NL"
+              }
+            ],
+            "path": [
+              "Person"
+            ]
+          },
+          {
+            "display": [
+              {
+                "description": "Personal Administrative Number",
+                "label": "Personal Administrative Number",
+                "lang": "en-US"
+              },
+              {
+                "description": "Persoonlijk Administratienummer",
+                "label": "Personal Administrative Number",
+                "lang": "nl-NL"
+              }
+            ],
+            "path": [
+              "Person",
+              "personal_administrative_number"
+            ]
+          }
+        ],
+        "credential_definition": {
+          "type": [
+            "PensionSdJwt"
+          ]
+        }
+      },
+      "PensionCredential": {
+        "format": "jwt_vc_json",
+        "cryptographic_binding_methods_supported": [
+          "did:web",
+          "did:jwk"
+        ],
+        "cryptographic_suites_supported": [
+          "ES256"
+        ],
+        "display": [
+          {
+            "name": "PensionCredential",
+            "description": "Pension Credential",
+            "background_color": "rgba(0, 0, 0, 0.2)",
+            "text_color": "#FBFBFB",
+            "logo": {
+              "url": "https://findynet.fi/wp-content/uploads/2024/02/findynet-logo.png",
+              "alt_text": "Findynet logo"
+            }
+          },
+          {
+            "locale": "en-US",
+            "name": "PensionCredential",
+            "description": "Residence statement Belastingdienst",
+            "background_color": "rgba(0, 0, 0, 0.2)",
+            "text_color": "#FBFBFB",
+            "logo": {
+              "url": "https://findynet.fi/wp-content/uploads/2024/02/findynet-logo.png",
+              "alt_text": "Findynet logo"
+            }
+          },
+          {
+            "locale": "nl-NL",
+            "name": "PensioenCredential",
+            "description": "Pensioen Credential",
+            "background_color": "rgba(0, 0, 0, 0.2)",
+            "text_color": "#FBFBFB",
+            "logo": {
+              "url": "https://findynet.fi/wp-content/uploads/2024/02/findynet-logo.png",
+              "alt_text": "Findynet logo"
+            }
+          }
+        ],
+        "credentialSubject": {
+          "Pension": {
+            "display": [
+              {
+                "name": "Pension Information"
+              },
+              {
+                "name": "Pension Information",
+                "locale": "en-US"
+              },
+              {
+                "name": "Pensioeninformatie",
+                "locale": "nl-NL"
+              }
+            ],
+            "startDate": {
+              "display": [
+                {
+                  "name": "Start Date"
+                },
+                {
+                  "name": "Start Date",
+                  "locale": "en-US"
+                },
+                {
+                  "name": "Startdatum",
+                  "locale": "nl-NL"
+                }
+              ]
+            },
+            "endDate": {
+              "display": [
+                {
+                  "name": "End Date"
+                },
+                {
+                  "name": "End Date",
+                  "locale": "en-US"
+                },
+                {
+                  "name": "Einddatum",
+                  "locale": "nl-NL"
+                }
+              ]
+            },
+            "provisional": {
+              "display": [
+                {
+                  "name": "Provisional Status"
+                },
+                {
+                  "name": "Provisional Status",
+                  "locale": "en-US"
+                },
+                {
+                  "name": "Voorlopige Status",
+                  "locale": "nl-NL"
+                }
+              ]
+            },
+            "typeCode": {
+              "display": [
+                {
+                  "name": "Type Code"
+                },
+                {
+                  "name": "Type Code",
+                  "locale": "en-US"
+                },
+                {
+                  "name": "Typecode",
+                  "locale": "nl-NL"
+                }
+              ]
+            },
+            "typeName": {
+              "display": [
+                {
+                  "name": "Type Name"
+                },
+                {
+                  "name": "Type Name",
+                  "locale": "en-US"
+                },
+                {
+                  "name": "Typenaam",
+                  "locale": "nl-NL"
+                }
+              ]
+            }
+          },
+          "Person": {
+            "display": [
+              {
+                "name": "Personal Information"
+              },
+              {
+                "name": "Personal Information",
+                "locale": "en-US"
+              },
+              {
+                "name": "Persoonlijke Informatie",
+                "locale": "nl-NL"
+              }
+            ],
+            "personal_administrative_number": {
+              "display": [
+                {
+                  "name": "Personal Administrative Number"
+                },
+                {
+                  "name": "Personal Administrative Number",
+                  "locale": "en-US"
+                },
+                {
+                  "name": "Persoonlijk Administratienummer",
+                  "locale": "nl-NL"
+                }
+              ]
+            },
+            "birth_date": {
+              "display": [
+                {
+                  "name": "Date of Birth"
+                },
+                {
+                  "name": "Date of Birth",
+                  "locale": "en-US"
+                },
+                {
+                  "name": "Geboortedatum",
+                  "locale": "nl-NL"
+                }
+              ]
+            },
+            "family_name": {
+              "display": [
+                {
+                  "name": "Family Name"
+                },
+                {
+                  "name": "Family Name",
+                  "locale": "en-US"
+                },
+                {
+                  "name": "Achternaam",
+                  "locale": "nl-NL"
+                }
+              ]
+            },
+            "given_name": {
+              "display": [
+                {
+                  "name": "Given Name"
+                },
+                {
+                  "name": "Given Name",
+                  "locale": "en-US"
+                },
+                {
+                  "name": "Voornaam",
+                  "locale": "nl-NL"
+                }
+              ]
+            }
+          }
+        },
+        "credential_definition": {
+          "type": [
+            "VerifiableCredential",
+            "PensionCredential"
+          ]
+        }
+      }
+    },
+    "credential_supplier_config": {
+      "templates_base_dir": "templates",
+      "template_mappings": [
+        {
+          "credential_types": [
+            "PensionCredential"
+          ],
+          "template_path": "PensionCredential.hbs.json",
+          "format": "jwt_vc_json"
+        },
+        {
+          "credential_types": [
+            "PensionSdJwt"
+          ],
+          "template_path": "PensionSdJwt.hbs.json",
+          "format": "vc+sd-jwt"
+        }
+      ]
+    }
+  }
+}
+```
+
+### Authorization server metadata
+
+The agent has a built-in authorization server. This is mainly used for access tokens in the pre-authorized code flow. Although we do support an
+authorization code flow, unfortunately we could not make that easily accessible as part of these exercises yet
+
+```json
+{
+  "correlationId": "http://my-hostname-or-ip:5010/oid4vci",
+  "overwriteExisting": true,
+  "metadataType": "authorizationServer",
+  "metadata": {
+    "issuer": "http://my-hostname-or-ip:5010/oid4vci",
+    "token_endpoint": "http://my-hostname-or-ip:5010/oid4vci/token",
+    "token_endpoint_auth_methods_supported": [
+      "none",
+      "client_secret_jwt",
+      "client_secret_basic",
+      "client_secret_post"
+    ],
+    "scopes_supported": [
+      "openid"
+    ],
+    "revocation_endpoint_auth_methods_supported": [
+      "client_secret_basic",
+      "client_secret_post",
+      "client_secret_jwt",
+      "private_key_jwt"
+    ],
+    "jwks_uri": "http://my-hostname-or-ip:5010/oid4vci/.well-known/jwks.json"
+  }
+}
+
+```
+
+### OID4VCI Template files
+
+In the folder `packages/agent/conf/exercise/templates` you will find 2 template files using so called Handlebars templates. These templates are linked
+from the OID4VCI metadata per credential. It maps the input data supplied during session creation, onto the actual structure of the credential as
+defined in the template files. Have a look into both hbs.json files in this folder.
+
+## 4. The OID4VP files
+
+### OID4VP Options
+
+The OID4VP options file in `packages/conf/exercises/oid4vp_options` defines options for Authorization Requests
+
+```json
+{
+  "definitionId": "default",
+  "rpOpts": {
+    "supportedVersions": [
+      200,
+      180,
+      110
+    ],
+    "responseMode": "direct_post",
+    "clientMetadataOpts": {
+      "idTokenSigningAlgValuesSupported": [
+        "ES256"
+      ],
+      "requestObjectSigningAlgValuesSupported": [
+        "ES256"
+      ],
+      "responseTypesSupported": [
+        "id_token",
+        "vp_token"
+      ],
+      "client_name": "Findynet",
+      "vpFormatsSupported": {
+        "jwt_vc_json": {
+          "alg": [
+            "ES256"
+          ]
+        },
+        "jwt_vp_json": {
+          "alg": [
+            "ES256"
+          ]
+        },
+        "jwt_vc": {
+          "alg": [
+            "ES256"
+          ]
+        },
+        "jwt_vp": {
+          "alg": [
+            "ES256"
+          ]
+        }
+      },
+      "scopesSupported": [
+        "openid did_authn"
+      ],
+      "subjectTypesSupported": [
+        "pairwise"
+      ],
+      "subject_syntax_types_supported": [
+        "did:web",
+        "did:jwk"
+      ],
+      "passBy": "VALUE"
+    },
+    "didOpts": {
+      "checkLinkedDomains": "if_present"
+    },
+    "identifierOpts": {
+      "idOpts": {
+        "clientIdScheme": "did",
+        "method": "did",
+        "identifier": "did:jwk:eyJhbGciOiJFUzI1NiIsInVzZSI6InNpZyIsImt0eSI6IkVDIiwiY3J2IjoiUC0yNTYiLCJ4IjoiVEcySDJ4MmRXWE4zdUNxWnBxRjF5c0FQUVZESkVOX0gtQ010YmdqYi1OZyIsInkiOiI5TThOeGQwUE4yMk05bFBEeGRwRHBvVEx6MTV3ZnlaSnM2WmhLSVVKMzM4In0",
+        "kid": "did:jwk:eyJhbGciOiJFUzI1NiIsInVzZSI6InNpZyIsImt0eSI6IkVDIiwiY3J2IjoiUC0yNTYiLCJ4IjoiVEcySDJ4MmRXWE4zdUNxWnBxRjF5c0FQUVZESkVOX0gtQ010YmdqYi1OZyIsInkiOiI5TThOeGQwUE4yMk05bFBEeGRwRHBvVEx6MTV3ZnlaSnM2WmhLSVVKMzM4In0#0",
+        "kmsKeyRef": "034c6d87db1d9d597377b82a99a6a175cac00f4150c910dfc7f8232d6e08dbf8d8"
+      }
+    }
+  }
+}
+
+```
+
+### Presentation Definitions
+
+In `packages/agent/conf/exercises/presentation_definitions` you will find Presentation Definitions that the agent imports from disk. Look into the
+example file, but there are separate exercises on OID4VP.
+
+# 5. Environment variables
+
+In `packages/agent` there is a file called `.env.example`. First copy this file to `.env.local`. This will make sure that you can configure
+environment variables in this file, which are local to your environment.
+
+Open the file and make sure that you update the CONF_PATH to `./conf/exercises` otherwise it would keep loading the configuration files from the
+original `conf/examples` folder.
+
+```properties
+# 'development' | 'production' | 'local'
+NODE_ENV=development
+HOSTNAME=localhost
+PORT=5010
+OID4VCI_API_BASE_URL=http://localhost:5010/oid4vci
+# You can find configuration examples in the conf/examples folder.
+# You may choose to duplicate that folder and update the path below.
+CONF_PATH="./conf/examples"
+# The cookie secret key. Make sure to set this to a long and secure random string.
+COOKIE_SIGNING_KEY=c29739248ad1bd1a0fc4d9b75cd4d2990de535baf5caadfdf8d8f86664aa830c
+# The database connection name
+DB_CONNECTION_NAME=default
+# A Supabase Postgres database instance is expected.
+# You can find instructions on how to self-host a Supabase deployment here: https://supabase.com/docs/guides/self-hosting
+# You must inform below the DB connection specs. Either use the URL (more flexible), or use DB_HOST and DB_PORT.
+# You can also include username and password: postgresql://user:password:5432/vc-issuer-db
+#DB_URL="postgresql://postgres:your-super-secret-and-long-postgres-password@127.0.0.1:5432/postgres"
+# The Database type. Currently only sqlite and postgres are supported
+DB_TYPE=sqlite
+# Whether to enable the cache on the DB.
+DB_CACHE_ENABLED=true
+# The URL of the database. Either use the URL (more flexible), or you can also use DB_HOST and DB_PORT for postgres
+# In case of sqlite, this should be the path, like 'database/agent_default.sqlite'
+# For postgres you can also include username and password: postgresql://user:password:5432/vc-issuer-db
+# DB_URL="postgresql://user:password@localhost:5432/vc-issuer-db?sslmode=prefer"
+DB_URL="database/agent_default.sqlite"
+#DB_URL="postgresql://postgres:your-super-secret-and-long-postgres-password@127.0.0.1:5432/postgres"
+# The encryption key for the database. If not set, a default key will be used.
+# In production, make sure to set this to a long and secure random string.
+DB_ENCRYPTION_KEY=c29739248ad1bd1a0fc4d9b75cd4d2990de535baf5caadfdf8d8f86664aa830c
+OID4VCI_ENABLED=true
+#OID4VCI_API_BASE_URL=http://192.168.2.90:5010/oid4vci
+DEFAULT_DID=did:jwk:eyJhbGciOiJFUzI1NiIsInVzZSI6InNpZyIsImt0eSI6IkVDIiwiY3J2IjoiUC0yNTYiLCJ4IjoiVEcySDJ4MmRXWE4zdUNxWnBxRjF5c0FQUVZESkVOX0gtQ010YmdqYi1OZyIsInkiOiI5TThOeGQwUE4yMk05bFBEeGRwRHBvVEx6MTV3ZnlaSnM2WmhLSVVKMzM4In0
+#DEFAULT_DID=did:jwk:eyJhbGciOiJFUzI1NiIsInVzZSI6InNpZyIsImt0eSI6IkVDIiwiY3J2IjoiUC0yNTYiLCJ4IjoiWjY3eEc3UFZUUHBDdlp3UjVlR2pteHhqQjdlb2M1cWdYbm9LMloxR2R6YyIsInkiOiJ1ZkpCc3BlNTV5WkZXVWN1T21GRUMtX3NEVE1nVXRndF8tbmV2WHd4UVdZIn0
+DEFAULT_KID=sphereon-auth
+# How to import DIDs.
+DID_IMPORT_MODE=environment,filesystem # 'environment' | 'filesystem' | 'environment,filesystem' | 'none'
+# If you want to import a DID:WEB with X509 certificates use the following env vars
+DID_WEB_DID=did:web:localhost
+# The below X509 options are required when DID_WEB_DID is configured
+DID_WEB_CERT_PEM="-----BEGIN CERTIFICATE-----\nMIIGYjCCBMqgAwIBAgIQDy+1BhXKuxzdovu9w4FQjDANBgkqhkiG9w0BAQwFADA7\nMQswCQYDVQQGEwJVUzEQMA4GA1UEChMHQ2VydGVyYTEaMBgGA1UEAxMRQ2VydGVy\nYSBEViBTU0wgQ0EwHhcNMjMwNTI0MDAwMDAwWhcNMjQwNjIzMjM1OTU5WjAcMRow\nGAYDVQQDExFkZGlwLnNwaGVyZW9uLmNvbTCCASIwDQYJKoZIhvcNAQEBBQADggEP\nADCCAQoCggEBALqREdqeJ7nvJqyTmrumT2ms2IGJT6T8JOKQ7hvo21ksTFO+G3lH\nx8REsml3IJo0y7kH5+8q48beu8RUzsGihCMdX+dRoV7Tsapp01gn1gTBQmJU5xG9\nqMcjB1VCPXZiXJmmijAUzQ5rwkaRwm4qHrVw3wv9xjagY2xfvxjgJJzYih4XJcnw\n8xrckFjULnhD3wIiD0HN3d/h55cJTX2r/39Vbw5XGyeMc4zJOjf6gsiybGw0UKqm\nSSTn8X44qXWzGAamBHFzw0pnc5E+rHHJKl4HS3pUX7ceDt58w6p8q7/DwNpCgUUa\ngspq2CtVWqu7pOiUAOsOTIDe5npFaZK10KsCAwEAAaOCAv8wggL7MB8GA1UdIwQY\nMBaAFNN6hzrGkln/4n2yDTPo9oT6pXBoMB0GA1UdDgQWBBTfwjqc+CQSs5V34+As\nbhxjUkZt6jAOBgNVHQ8BAf8EBAMCBaAwDAYDVR0TAQH/BAIwADAdBgNVHSUEFjAU\nBggrBgEFBQcDAQYIKwYBBQUHAwIwSQYDVR0gBEIwQDA0BgsrBgEEAbIxAQICZTAl\nMCMGCCsGAQUFBwIBFhdodHRwczovL3NlY3RpZ28uY29tL0NQUzAIBgZngQwBAgEw\negYIKwYBBQUHAQEEbjBsMD0GCCsGAQUFBzAChjFodHRwOi8vQ2VydGVyYS5jcnQu\nc2VjdGlnby5jb20vQ2VydGVyYURWU1NMQ0EuY3J0MCsGCCsGAQUFBzABhh9odHRw\nOi8vQ2VydGVyYS5vY3NwLnNlY3RpZ28uY29tMDMGA1UdEQQsMCqCEWRkaXAuc3Bo\nZXJlb24uY29tghV3d3cuZGRpcC5zcGhlcmVvbi5jb20wggF+BgorBgEEAdZ5AgQC\nBIIBbgSCAWoBaAB2AHb/iD8KtvuVUcJhzPWHujS0pM27KdxoQgqf5mdMWjp0AAAB\niE0iJhUAAAQDAEcwRQIhAKpqJSzyNP0ICed91Nw6oh+xfjsXvaMC2EqMKvKrQIOP\nAiApB5/2P+PUiUATVn6g85qR3JaapaN87izuqbvGZC84zwB2ANq2v2s/tbYin5vC\nu1xr6HCRcWy7UYSFNL2kPTBI1/urAAABiE0iJnEAAAQDAEcwRQIhAK8pz8tXOyaq\n0zdOjzk3CyG3rd9gXQk6vuAcOHwRXcXpAiB/wJW3Cr1kzA8Dz0f7O9aIieUqLjFw\nb1E4ls4qyyUqAwB2AO7N0GTV2xrOxVy3nbTNE6Iyh0Z8vOzew1FIWUZxH7WbAAAB\niE0iJkQAAAQDAEcwRQIgKLFn5wRApi9lPLdKNhgXETUDeGApDWU+41pR1DzDhMAC\nIQCx724XN9M2Zg/xnCDJ44RGlh4EVBUkXpXdrwe9bMbgkjANBgkqhkiG9w0BAQwF\nAAOCAYEAeFuHhs8PGiTtfpps+IJd3qipeDns+BpfNOE7dYuMhBlB2x/TEyxCcaYe\nzYWq0I4YBB1MupgPj5e67n6p64ajQE0qFbO3ICVhKDPkmTgA/dM8vuUce8eg7B7+\ngpsaRagpDfPg8x2gCYNvRX10T2zPmm+vFjYk9lU38iLn+TrkAX3hqbNtOd1D8SHH\ngkvMU9Xty5YrsaA+wl4myhRl/7JCpr+S7QkESeOzBBFzNBVTuLaEI8pY6o1R6Hjn\npIocyrdKbn5vYBP/7+aHfSTGdo5Q4sCtwa22GPeUccbHIW0xVqNNOYruS8nH9vjI\nNEInDXcFrfjXGvzuyCqo/AzK1XPpEYej6LIb0kQNMT1JybNUNgomUynV8ClCZKmQ\n7gjTrMlEHrltlMwAh/zIUw4x32iuJJChffne6eQhSOl5LgATxS5Ez8DC/eF8arVO\nMqQTd6dbUrp8IXOzegXfKK3iZtbjWR7d4w7m8jyERTIMu39O8OlqVpBxVuupRniD\nx1XL6Lmc\n-----END CERTIFICATE-----\n"
+DID_WEB_PRIVATE_KEY_PEM="-----BEGIN PRIVATE KEY-----\nMIIEvwIBADANBgkqhkiG9w0BAQEFAASCBKkwggSlAgEAAoIBAQC6kRHanie57yas\nk5q7pk9prNiBiU+k/CTikO4b6NtZLExTvht5R8fERLJpdyCaNMu5B+fvKuPG3rvE\nVM7BooQjHV/nUaFe07GqadNYJ9YEwUJiVOcRvajHIwdVQj12YlyZpoowFM0Oa8JG\nkcJuKh61cN8L/cY2oGNsX78Y4CSc2IoeFyXJ8PMa3JBY1C54Q98CIg9Bzd3f4eeX\nCU19q/9/VW8OVxsnjHOMyTo3+oLIsmxsNFCqpkkk5/F+OKl1sxgGpgRxc8NKZ3OR\nPqxxySpeB0t6VF+3Hg7efMOqfKu/w8DaQoFFGoLKatgrVVqru6TolADrDkyA3uZ6\nRWmStdCrAgMBAAECggEBAIVRhWCkA99qdkh8ceYGQllRmqV2aeOMCw+cYYqwK47d\niO2OvDM+iBJIxPV4m2OWtr3SWHsgOwSxxZvWvqjAaYxuQUobmyUYQa11UgF89gMP\n11BNO5IB5cnnziWu4BzozSM/TyBsvNvBRWMIZdgzYR5nOfxnrGz80A9xnC06fu9U\n1Ku2NaTpxJteEHavbno+Wu/W2eRpfDIdI/utlEaDUrdExjhi31giAv9cA+2vARWt\nsBn2Rqjlw2O+o9rDJMBFZrOibptXV86ouP37oOWLb7aAB6/UlXqEhSBw8VvENFxo\nWx+TeeKnQrqMlfSnjl064YdmZ+jkvxg/DnKt+5A8QoECgYEA61K/g+YHKg8H4B09\nl7h0jagJyMC5wND8+j7/jX3TrmArZM8qifOGG8WaxeccYzxuvX1nEb8IQdTt4cIx\nGmy0SxlTME5lOMknIbkL+1DtLsYjDGaA1x+lZc3fkgS0vwhlGN/Xuw78ATkoutyB\nbcg1pVIVa5FD4otYLRWzqcot2n8CgYEAyvWdPo+EGlt+YvpuEOFTLnbyhroVxZ7k\ndNxyRE5ucBzZaghfmj0zaYZ3HfA05E+SoSjXY08UpZDcuGV95Zp50iAWuvXOgIBf\nrTSIPEX2ithDw6uBSmlTDcsi6a9Iqtq44BXM2rs6ug7E9EgbXWz2ZK5T/k72tpeD\n44oyg1tse9UCgYB7RLthwmtaUslTUr3i7hLP6YhGiv5CzLbX94wyeAkcvO++PO8R\nmGlVvutWY7vxF8UCqeAF4cXXhkyeB/Vk3DCNblSvZ0GKv4QqHB70pO25pLzTUBaJ\nmeAwNem5OZHcx+79WrRNHopPsbtuNvftpATF9vuVf2DKGSg1ZbrZZDkkzQKBgQC5\nQS/iZsVB+bmHRucoaUOv6cq9xyUQWVRWhtGWH7EWjH63FiWNd8dxztbzcMoWi7tf\ndxQDBa/m4C9X8OvVpAcGEVwuEygGiybJxmWD/qhnW7ee5vEAptq0gHLBssk1iqet\ngriV/shABDMqdpbj1A2jIKxyOElhqTMtgntRAyYmcQKBgQCSWdBwMQIbMQNn56Uu\ntdfSsLQKmjOceuuEiSIczQxrPE6ZJKGWEA7gLHG9Ap9r5Up48/9Girtm0uIFS435\nHOfOCyGUQjLzHCM8V3suEpHPzFcgAxOUzYuNau+d6oUq0gJQ+b0NGd0orpwoP0Bb\n0dtV1fJUFk8YoIV9LMFzExBqbw==\n-----END PRIVATE KEY-----\n"
+DID_WEB_CERT_CHAIN_PEM="-----BEGIN CERTIFICATE-----\nMIIEMjCCAxqgAwIBAgIBATANBgkqhkiG9w0BAQUFADB7MQswCQYDVQQGEwJHQjEb\nMBkGA1UECAwSR3JlYXRlciBNYW5jaGVzdGVyMRAwDgYDVQQHDAdTYWxmb3JkMRow\nGAYDVQQKDBFDb21vZG8gQ0EgTGltaXRlZDEhMB8GA1UEAwwYQUFBIENlcnRpZmlj\nYXRlIFNlcnZpY2VzMB4XDTA0MDEwMTAwMDAwMFoXDTI4MTIzMTIzNTk1OVowezEL\nMAkGA1UEBhMCR0IxGzAZBgNVBAgMEkdyZWF0ZXIgTWFuY2hlc3RlcjEQMA4GA1UE\nBwwHU2FsZm9yZDEaMBgGA1UECgwRQ29tb2RvIENBIExpbWl0ZWQxITAfBgNVBAMM\nGEFBQSBDZXJ0aWZpY2F0ZSBTZXJ2aWNlczCCASIwDQYJKoZIhvcNAQEBBQADggEP\nADCCAQoCggEBAL5AnfRu4ep2hxxNRUSOvkbIgwadwSr+GB+O5AL686tdUIoWMQua\nBtDFcCLNSS1UY8y2bmhGC1Pqy0wkwLxyTurxFa70VJoSCsN6sjNg4tqJVfMiWPPe\n3M/vg4aijJRPn2jymJBGhCfHdr/jzDUsi14HZGWCwEiwqJH5YZ92IFCokcdmtet4\nYgNW8IoaE+oxox6gmf049vYnMlhvB/VruPsUK6+3qszWY19zjNoFmag4qMsXeDZR\nrOme9Hg6jc8P2ULimAyrL58OAd7vn5lJ8S3frHRNG5i1R8XlKdH5kBjHYpy+g8cm\nez6KJcfA3Z3mNWgQIJ2P2N7Sw4ScDV7oL8kCAwEAAaOBwDCBvTAdBgNVHQ4EFgQU\noBEKIz6W8Qfs4q8p74Klf9AwpLQwDgYDVR0PAQH/BAQDAgEGMA8GA1UdEwEB/wQF\nMAMBAf8wewYDVR0fBHQwcjA4oDagNIYyaHR0cDovL2NybC5jb21vZG9jYS5jb20v\nQUFBQ2VydGlmaWNhdGVTZXJ2aWNlcy5jcmwwNqA0oDKGMGh0dHA6Ly9jcmwuY29t\nb2RvLm5ldC9BQUFDZXJ0aWZpY2F0ZVNlcnZpY2VzLmNybDANBgkqhkiG9w0BAQUF\nAAOCAQEACFb8AvCb6P+k+tZ7xkSAzk/ExfYAWMymtrwUSWgEdujm7l3sAg9g1o1Q\nGE8mTgHj5rCl7r+8dFRBv/38ErjHT1r0iWAFf2C3BUrz9vHCv8S5dIa2LX1rzNLz\nRt0vxuBqw8M0Ayx9lt1awg6nCpnBBYurDC/zXDrPbDdVCYfeU0BsWO/8tqtlbgT2\nG9w84FoVxp7Z8VlIMCFlA2zs6SFz7JsDoeA3raAVGI/6ugLOpyypEBMs1OUIJqsi\nl2D4kF501KKaU73yqWjgom7C12yxow+ev+to51byrvLjKzg6CYG1a4XXvi3tPxq3\nsmPi9WIsgtRqAEFQ8TmDn5XpNpaYbg==\n-----END CERTIFICATE-----\n-----BEGIN CERTIFICATE-----\nMIIFgTCCBGmgAwIBAgIQOXJEOvkit1HX02wQ3TE1lTANBgkqhkiG9w0BAQwFADB7\nMQswCQYDVQQGEwJHQjEbMBkGA1UECAwSR3JlYXRlciBNYW5jaGVzdGVyMRAwDgYD\nVQQHDAdTYWxmb3JkMRowGAYDVQQKDBFDb21vZG8gQ0EgTGltaXRlZDEhMB8GA1UE\nAwwYQUFBIENlcnRpZmljYXRlIFNlcnZpY2VzMB4XDTE5MDMxMjAwMDAwMFoXDTI4\nMTIzMTIzNTk1OVowgYgxCzAJBgNVBAYTAlVTMRMwEQYDVQQIEwpOZXcgSmVyc2V5\nMRQwEgYDVQQHEwtKZXJzZXkgQ2l0eTEeMBwGA1UEChMVVGhlIFVTRVJUUlVTVCBO\nZXR3b3JrMS4wLAYDVQQDEyVVU0VSVHJ1c3QgUlNBIENlcnRpZmljYXRpb24gQXV0\naG9yaXR5MIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEAgBJlFzYOw9sI\ns9CsVw127c0n00ytUINh4qogTQktZAnczomfzD2p7PbPwdzx07HWezcoEStH2jnG\nvDoZtF+mvX2do2NCtnbyqTsrkfjib9DsFiCQCT7i6HTJGLSR1GJk23+jBvGIGGqQ\nIjy8/hPwhxR79uQfjtTkUcYRZ0YIUcuGFFQ/vDP+fmyc/xadGL1RjjWmp2bIcmfb\nIWax1Jt4A8BQOujM8Ny8nkz+rwWWNR9XWrf/zvk9tyy29lTdyOcSOk2uTIq3XJq0\ntyA9yn8iNK5+O2hmAUTnAU5GU5szYPeUvlM3kHND8zLDU+/bqv50TmnHa4xgk97E\nxwzf4TKuzJM7UXiVZ4vuPVb+DNBpDxsP8yUmazNt925H+nND5X4OpWaxKXwyhGNV\nicQNwZNUMBkTrNN9N6frXTpsNVzbQdcS2qlJC9/YgIoJk2KOtWbPJYjNhLixP6Q5\nD9kCnusSTJV882sFqV4Wg8y4Z+LoE53MW4LTTLPtW//e5XOsIzstAL81VXQJSdhJ\nWBp/kjbmUZIO8yZ9HE0XvMnsQybQv0FfQKlERPSZ51eHnlAfV1SoPv10Yy+xUGUJ\n5lhCLkMaTLTwJUdZ+gQek9QmRkpQgbLevni3/GcV4clXhB4PY9bpYrrWX1Uu6lzG\nKAgEJTm4Diup8kyXHAc/DVL17e8vgg8CAwEAAaOB8jCB7zAfBgNVHSMEGDAWgBSg\nEQojPpbxB+zirynvgqV/0DCktDAdBgNVHQ4EFgQUU3m/WqorSs9UgOHYm8Cd8rID\nZsswDgYDVR0PAQH/BAQDAgGGMA8GA1UdEwEB/wQFMAMBAf8wEQYDVR0gBAowCDAG\nBgRVHSAAMEMGA1UdHwQ8MDowOKA2oDSGMmh0dHA6Ly9jcmwuY29tb2RvY2EuY29t\nL0FBQUNlcnRpZmljYXRlU2VydmljZXMuY3JsMDQGCCsGAQUFBwEBBCgwJjAkBggr\nBgEFBQcwAYYYaHR0cDovL29jc3AuY29tb2RvY2EuY29tMA0GCSqGSIb3DQEBDAUA\nA4IBAQAYh1HcdCE9nIrgJ7cz0C7M7PDmy14R3iJvm3WOnnL+5Nb+qh+cli3vA0p+\nrvSNb3I8QzvAP+u431yqqcau8vzY7qN7Q/aGNnwU4M309z/+3ri0ivCRlv79Q2R+\n/czSAaF9ffgZGclCKxO/WIu6pKJmBHaIkU4MiRTOok3JMrO66BQavHHxW/BBC5gA\nCiIDEOUMsfnNkjcZ7Tvx5Dq2+UUTJnWvu6rvP3t3O9LEApE9GQDTF1w52z97GA1F\nzZOFli9d31kWTz9RvdVFGD/tSo7oBmF0Ixa1DVBzJ0RHfxBdiSprhTEUxOipakyA\nvGp4z7h/jnZymQyd/teRCBaho1+V\n-----END CERTIFICATE-----\n-----BEGIN CERTIFICATE-----\n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\nMvbfrkXKreFHUTuvjm3yYJi/reiQ\n-----END CERTIFICATE-----\n\n"
+# A KID is optional, otherwise a default value will be used
+DID_WEB_KID=JWK2020-RSA
+# The status list API base path. This is the base path where the status list API will be hosted
+STATUS_LIST_API_BASE_PATH=/vc
+# The DID of the status list. This should be the same DID as the issuer of VCs.
+STATUS_LIST_ISSUER=did:jwk:eyJhbGciOiJFUzI1NiIsInVzZSI6InNpZyIsImt0eSI6IkVDIiwiY3J2IjoiUC0yNTYiLCJ4IjoiVEcySDJ4MmRXWE4zdUNxWnBxRjF5c0FQUVZESkVOX0gtQ010YmdqYi1OZyIsInkiOiI5TThOeGQwUE4yMk05bFBEeGRwRHBvVEx6MTV3ZnlaSnM2WmhLSVVKMzM4In0
+#STATUS_LIST_ISSUER=did:ion:EiA4RFGgZbqV8jN2SnOQwzwU7lKCbQYB37bTJTcqZPiw6w:eyJkZWx0YSI6eyJwYXRjaGVzIjpbeyJhY3Rpb24iOiJyZXBsYWNlIiwiZG9jdW1lbnQiOnsicHVibGljS2V5cyI6W3siaWQiOiJyd3MtYXV0aCIsInB1YmxpY0tleUp3ayI6eyJjcnYiOiJzZWNwMjU2azEiLCJrdHkiOiJFQyIsIngiOiJabkdsUDBPcXdBT1dMX0hlSUlJNm1zOUtuTEJBdXZacm1GMU9POGcySEE0IiwieSI6Imx3ZjhBemZnWUZfNTlFZEVieG9DWk5Nd1NpUVFDU29jWEVDRG1uZF9yWHMifSwicHVycG9zZXMiOlsiYXV0aGVudGljYXRpb24iLCJhc3NlcnRpb25NZXRob2QiXSwidHlwZSI6IkVjZHNhU2VjcDI1NmsxVmVyaWZpY2F0aW9uS2V5MjAxOSJ9XSwic2VydmljZXMiOlt7ImlkIjoidHJhY2VhYmlsaXR5Iiwic2VydmljZUVuZHBvaW50IjoiaHR0cDovL2xvY2FsaG9zdDo1MDEwL3ZjIiwidHlwZSI6IlRyYWNlYWJpbGl0eUFQSSJ9XX19XSwidXBkYXRlQ29tbWl0bWVudCI6IkVpRElPNlE4M1p2MkFJR09Yb2dRbHVYbEpwNTc2WVNBOWc0dVF1MzVDRVc0Y3cifSwic3VmZml4RGF0YSI6eyJkZWx0YUhhc2giOiJFaURJb3hPUHlwUVltazFxT3lJakJyM1Fadk1VVDRrelJrSXQ1V1RHWHlVUW53IiwicmVjb3ZlcnlDb21taXRtZW50IjoiRWlDNVQ5aTVNSjVzRm9FaDg4cTdKa09qWUNQMXBEODR5ODBNSzRCZUJmeGJKZyJ9fQ
+# The id (URL) of the status list. This needs to be a resolvable URL that hosts the status list credential.
+STATUS_LIST_ID=http://my-hostname-or-ip:5010/vc/status-lists/example
+# A correlation id for the status list. This ID is mandatory and is mainly used when calling endpoints
+STATUS_LIST_CORRELATION_ID=default-example
+# The status list length. Should be at least 150.000 to ensure heard privacy for subjects. Random indices from this list will be used
+# when issuing credentials
+STATUS_LIST_LENGTH=150000
+# Status list purpose.
+# Choose between 'revocation' to only allow revocation of a status, or 'suspension' to allow for (temporary) suspension and reactivation
+STATUS_LIST_PURPOSE=suspension # 'revocation' | 'suspension
+# The features to enable for status lists. Currently can contain 3 values:
+# status-list-management: Create/manage new and existing status-lists. By default this endpoint is disabled as lists are seldomly created
+# status-list-hosting: Hosts the status-list at the /status-lists/:id path for public consumption
+# w3c-vc-api-credential-status: Provides the W3C VC API compatible endpoint to update credential status values for a specific credentialId
+#STATUS_LIST_API_FEATURES=status-list-management,status-list-hosting,w3c-vc-api-credential-status
+STATUS_LIST_API_FEATURES=status-list-hosting,w3c-vc-api-credential-status
+CONTACT_MANAGER_API_FEATURES=party_read,party_write,party_type_read,identity_read
+DID_WEB_SERVICE_FEATURES=did-web-global-resolution
+OID4VCI_ISSUER_OPTIONS_PATH=
+VC_API_BASE_PATH=/agent/vc
+# The URL of the universal resolver.
+UNIVERSAL_RESOLVER_RESOLVE_URL="https://dev.uniresolver.io/1.0/identifiers"
+
+```
+
+# 6. Start the agent
+
+Now we are finaly ready to start the agent, exposed using the ngrok URL.
+
+Run the following command and make sure the agent keeps running. There could be a few warning messages, but that is okay for now.
+
+Make sure you are in the correct folder: `packages/agent`
+
+```shell
+pnpm run start:dev
+```
+
+The agent should now be running, and you are now ready to start the exercises.

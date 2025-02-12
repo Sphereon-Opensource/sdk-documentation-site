@@ -25,16 +25,16 @@ In the below exercises you will learn how to present credentials using an Author
 Please use the `create-authorization-request` [API (docs)](/oid4vc/siop-oid4vp/api-reference/backend/create-authorization-request) or
 [API (swaggerhub)](https://app.swaggerhub.com/apis/SphereonInt/OID4VP/0.1.0#/Backend/create-authorization-request) to create a so-called Authentication Request by providing a `presentation definition`.
 
-You will need to provide a `definitionId` for instance with value `WoonplaatsverklaringVCJWT` as path parameter, given every OID4VP Authorization Request will internally use a Presentation Definition (or DCQL query in the future)
+You will need to provide a `definitionId` for instance with value `PensionSdJwt` as path parameter, given every OID4VP Authorization Request will internally use a Presentation Definition (or DCQL query in the future)
 
 The expected outcome should be an HTTP response with something like:
 
 ```json
 {
   "correlationId": "2cc29d1c-7d00-46f8-b0ae-b4779d2ff143",
-  "definitionId": "WoonplaatsverklaringVCJWT",
-  "authRequestURI": "openid-vc://?request_uri=https://example.com/siop/definitions/WoonplaatsverklaringVCJWT/auth-requests/b5cab09e-7c08-42c9-870b-c2b83a2c8acd",
-  "authStatusURI": "https://example.com/webapp/auth-status"
+  "definitionId": "PensionSdJwt",
+  "authRequestURI": "openid-vc://?request_uri=https://agent.findynet.demo.sphereon.com/siop/definitions/PensionSdJwt/auth-requests/b5cab09e-7c08-42c9-870b-c2b83a2c8acd",
+  "authStatusURI": "https://agent.findynet.demo.sphereon.com/webapp/auth-status"
 }
 ```
 
@@ -88,7 +88,7 @@ The `create-authrozation-request` endpoint we used above internally creates a se
 
 
 ## Exercise 4: Get the initial status
-In this exercise we will retrieve the initial status of the credential offer. Without a wallet involved. The state will be `OFFER_CREATED`
+In this exercise we will retrieve the initial status of the credential offer. Without a wallet involved. The state will be `created`
 
 Please use the `get-authorization-status` [API (docs)](/oid4vc/siop-oid4vp/api-reference/backend/get-authorization-status) or
 [API (swaggerhub)](https://app.swaggerhub.com/apis/SphereonInt/OID4VP/0.1.0#/Backend/get-authorization-status) to check the progress of the session using the `correlationId` value you supplied during session creation above and `definitionId` with the value you previously used in the path. You could also create a new session as explained in the above exercises.
@@ -99,7 +99,7 @@ You should get a response like this:
 {
   "status": "created",
   "correlationId": "2cc29d1c-7d00-46f8-b0ae-b4779d2ff143",
-  "definitionId": "WoonplaatsverklaringVCJWT",
+  "definitionId": "PensionSdJwt",
   "lastUpdated": 1706515200000
 }
 ```
@@ -108,24 +108,65 @@ The `status` is from the table above.
 
 
 
-## Exercise 5: Check the status when the wallet has presented
-In this exercise we will continue where the previous exercise ended. We will use the wallet to scan the QR code. Make sure that you create the QR code from the offer, or use the QR code the API supplied (see earlier exercises in case of doubt).
-Scan the QR code with the mobile wallet. Once the wallet is in the accept/decline screen, you should see the state as `CREDENTIAL_ISSUED`
+## Exercise 5: Now scan the QR code
+In this exercise we will continue where the previous exercise ended. We will use the wallet to scan the QR code. Make sure that you create the QR code from the `authRequestUri`
+Scan the QR code with the mobile wallet. Once the wallet is in the present screen, send in the credential
 
-Please use the `credential-offer-status` [API (docs)](/oid4vc/oid4vci/api-reference/backend/get-credential-offer-status) or
-[API (swaggerhub)](https://app.swaggerhub.com/apis/SphereonInt/OID4VCI/0.1.1#/Backend/get-credential-offer-status) to check the progress of the session using the `pre-authorized_code` value you supplied during credential offer creation.
+Please use the `get-authorization-status` [API (docs)](/oid4vc/siop-oid4vp/api-reference/backend/get-authorization-status) or
+[API (swaggerhub)](https://app.swaggerhub.com/apis/SphereonInt/OID4VP/0.1.0#/Backend/get-authorization-status) to check the progress of the session using the `correlationId` value you supplied during session creation above and `definitionId` with the value you previously used in the path. You could also create a new session as explained in the above exercises.
 
 You should get a response like this:
 
 ```json
 {
-  "createdAt":1739044208549,
-  "lastUpdatedAt":1739044208549,
-  "status":"CREDENTIAL_ISSUED"
+  "status": "verified",
+  "correlationId": "3505ec66-7886-455b-8bae-63ec359a6a44",
+  "definitionId": "PensionSdJwt",
+  "lastUpdated": 1739323518318,
+  "payload": {
+    "state": "3505ec66-7886-455b-8bae-63ec359a6a44",
+    "presentation_submission": {
+      "id": "6zoPcSLOVZAApZLajaKUc",
+      "definition_id": "PensionSdJwt",
+      "descriptor_map": [
+        {
+          "id": "e5d97b9a-d9cd-416e-9d08-1da46145a4a6",
+          "format": "vc+sd-jwt",
+          "path": "$"
+        }
+      ]
+    },
+    "vp_token": "eyJ0eXAiOiJ2YytzZC1qd3QiLCJraWQiOiJkaWQ6d2ViOmFnZW50LmZpbmR5bmV0LmRlbW8uc3BoZXJlb24uY29tIzAzYzk4NTNmMTAzNjhiMDU3ZjAzM2FmMTU2OGI1MmIyNGVlMzg5MDU1YjczMTYyZjhmNGFlZjdkMDBhZmQ5ZTRkNyIsImFsZyI6IkVTMjU2In0.eyJ2Y3QiOiJQZW5zaW9uU2RKd3QiLCJQZW5zaW9uIjp7Il9zZCI6WyI0Vk9xMjhVaFREenMzeXk0M082UnFHbU9SRWpFVEJxdVZzNTBiaVZVVnZzIiwiTWh2YlVjNEtyQ3RKZU93a2U5Q05IYkVhbUhPYVZSRkxGempGVUhMc0doZyIsImVxOVNkcGY5MUdzZDgtcmhmcmZwTmJwZjl3VUF5bm1rNHl0WFZqaW1pNnciLCJuR2xpejc5cWo3dGgwajFubjJHa0pETUFkZTBMRThuVWtFcy1qbHk4aXdrIiwibzZXc3A3UEtGbEJLSVlxakxZU3Znc1pXUWxwNUNTQ1c0TGxlQzd0eGhQQSJdfSwiUGVyc29uIjp7Il9zZCI6WyI0TDBzTmVSa1FLeVdiWTB3amlETU9QUWFiUXJfNWhMVEtCdGFmTkFxQWZjIiwiRjZsM0Q1UWIzQkd6eEpHdC1Qc285dDBxbFdoRWU0ZDlzNW9RLTNGMXlCWSIsIkZiR0xNMnFpeHNoMGdLZ21qbFZRQUctRFRqdV9fblZoQmgzZUJoX2x1TXciLCJJNGxMOExaLVZsdTB1MVVlLU9oTjZoTzFNYW1GMVZvUXRkNk1YWTR5YzdRIl19LCJleHBpcmF0aW9uRGF0ZSI6IjIwMjYtMDItMTJUMDA6MDM6NDMuNzc4WiIsInN0YXR1cyI6eyJzdGF0dXNfbGlzdCI6eyJ1cmkiOiJodHRwczovL2FnZW50LmZpbmR5bmV0LmRlbW8uc3BoZXJlb24uY29tL3ZjL3N0YXR1cy1saXN0cy9wZW5zaW9uY3JlZGVudGlhbC1vYXV0aCIsImlkeCI6ODAwODV9fSwiY25mIjp7ImtpZCI6ImRpZDpqd2s6ZXlKaGJHY2lPaUpGVXpJMU5pSXNJblZ6WlNJNkluTnBaeUlzSW10MGVTSTZJa1ZESWl3aVkzSjJJam9pVUMweU5UWWlMQ0o0SWpvaVdHazBhMXBUWW1OaWRYVnZUMDh3ZVhoNWNESm9TUzA0TVZCemQzRjFUSEJ0U2xveVIybHhWM0pLZHlJc0lua2lPaUpVTTFSMVlXSjBhMFYwWDNkcGJGaHBVRTFEZWxCWk4zSnVNVWxIVUZjMlRpMXNORUZhUTE5VE9GaDNJbjAjMCJ9LCJpc3MiOiJkaWQ6d2ViOmFnZW50LmZpbmR5bmV0LmRlbW8uc3BoZXJlb24uY29tIiwiaWF0IjoxNzM5MzE1MDIzLCJfc2RfYWxnIjoic2hhLTI1NiJ9.7Sdid1hKMaYAWVJE3GldqT0fHK-koGSghSE0Lws0DOI6Dez-P5Vxfj2nFYnsDSjubNelP4DgzGLIlBjNFloLtA~WyJjZmY0NjYxNy1iYzhiLTQ1MDgtODc1Ny0zY2ZkYmJjYmE4ZjYiLCJlbmREYXRlIiwiMjA3MC0wNS0xMCJd~WyI0MzEzMWRhNy1mOTZlLTQ0MGItODRlMC1jNzEwYTJmNjc4ZWUiLCJwcm92aXNpb25hbCIsIiJd~WyIyZWUyZWMwNS1mN2IwLTQ2NTgtODBkNS05ZjUzM2RjODhhZTYiLCJzdGFydERhdGUiLCIyMDQwLTAxLTAxIl0~WyI0MzA2OTg5Mi0zMjRkLTQzZjAtOWQ1Ny0zNWJmMGY2YjYxZTAiLCJ0eXBlQ29kZSIsIlBSRSJd~WyI4ZGE3ZGNlMS1kMDUyLTRlYzgtYmM4MC03NDY2ZDAxZGRkOTAiLCJmYW1pbHlfbmFtZSIsIkRvZSJd~WyI4OWI5OTY5Yi04Y2I1LTQ5NGMtODc2Ny1hZGY1MDFlMTZjNjciLCJwZXJzb25hbF9hZG1pbmlzdHJhdGl2ZV9udW1iZXIiLCIxMjM0NTY3OCJd~eyJ0eXAiOiJrYitqd3QiLCJhbGciOiJFUzI1NiJ9.eyJpYXQiOjE3MzkzMjM1MTcsIm5vbmNlIjoiYWJlYmM0MWUtZDU4Ni00N2E0LTg2NzYtNTdjOGQ0OGZiODhiIiwic2RfaGFzaCI6IjhTTnhvY3Y4bmZCbURZdHR1b2IyWXlNTldrT0pTQ2hMNnJBbTFXSDNpRzQiLCJhdWQiOiJkaWQ6d2ViOmFnZW50LmZpbmR5bmV0LmRlbW8uc3BoZXJlb24uY29tIn0.Hv_klG1XNl6ws0zyK951GQBar5dQiyW1QPEtP6bThAhJ5VSoGcYd7lFJT5ss35lqIcr6G-DfN743zi8QcM-9lA",
+    "verifiedData": {
+      "vct": "PensionSdJwt",
+      "Pension": {
+        "endDate": "2070-05-10",
+        "provisional": "",
+        "startDate": "2040-01-01",
+        "typeCode": "PRE"
+      },
+      "Person": {
+        "personal_administrative_number": "12345678",
+        "family_name": "Doe"
+      },
+      "expirationDate": "2026-02-12T00:03:43.778Z",
+      "status": {
+        "status_list": {
+          "uri": "https://agent.findynet.demo.sphereon.com/vc/status-lists/pensioncredential-oauth",
+          "idx": 80085
+        }
+      },
+      "cnf": {
+        "kid": "did:jwk:eyJhbGciOiJFUzI1NiIsInVzZSI6InNpZyIsImt0eSI6IkVDIiwiY3J2IjoiUC0yNTYiLCJ4IjoiWGk0a1pTYmNidXVvT08weXh5cDJoSS04MVBzd3F1THBtSloyR2lxV3JKdyIsInkiOiJUM1R1YWJ0a0V0X3dpbFhpUE1DelBZN3JuMUlHUFc2Ti1sNEFaQ19TOFh3In0#0"
+      },
+      "iss": "did:web:agent.findynet.demo.sphereon.com",
+      "iat": 1739315023
+    },
+    "nonce": "abebc41e-d586-47a4-8676-57c8d48fb88b"
+  },
+  "verifiedData": {}
 }
 ```
 The `status` is from the table above.
 
-The reason the status is CREDENTIAL_ISSUED is because it actually is issued from the perspective of the Issuer at this point. The wallet does not know (yet) whether the holder will accept or decline the credential.
-If you now accept the credential in the wallet the status value will move to `NOTIFICATION_CREDENTIAL_ACCEPTED` if you call the API, but only if the notification endpoint is enabled and only if the wallet has both implemented that feature and enabled it.
-
+Note that the response all of a sudden contains the information that was submitted by the wallet

@@ -1,0 +1,109 @@
+---
+title: Setup development environment
+description: 'Setup a typescript development environment'
+---
+
+The exercises on the [documentation site](https://docs.sphereon.com) are using the REST APIs exposed by the agent and can be run in 3 ways. In order
+of least complex to more complex:
+
+1. Use the online demo environment
+2. Install a demo agent from source with NodeJS
+3. Install a demo agent with Docker
+
+Currently, we advise to use method 1 or method 2, as method 3 needs a bit more work to easily test with changes applied to configurations
+
+# 1. Using the online demo environment
+
+We suggest to use a tool like Postman or curl, but you can also perform the exercises using the more clumsy OpenAPI tool part of
+the [documentation site](https://docs.sphereon.com) or the easier online SwaggerHub which is linked with every exercise.
+
+There is nothing you need to do additionally. You can start with the exercises straight away.
+
+# 2. From source with NodeJS
+
+## Checkout repository
+
+During these examples we will be using the agent from the web-wallet project. This agent has rudimentary file configuration support, so we can easily
+test and re-configure. The web wallet project is a mono-repository, meaning it has a sub-folder for the agent alone.
+At a later point you could also run the full web wallet if you wish.
+
+## Git
+
+We need to checkout the web-wallet mono-repository repository from https://github.com/Sphereon-OpenSource/web-wallet.git
+
+Either use your favorite Git tool or use the command line
+
+```shell
+git clone https://github.com/Sphereon-OpenSource/web-wallet.git
+```
+
+## NodeJS
+
+Make sure to install NodeJS version 20.X
+
+## Pnpm
+
+To build the project [pnpm](https://www.npmjs.com/package/pnpm) will be used. Do not confuse this package manager with the
+more regular `npm`. Also do not use the regular `npm` for this projects.
+
+Install pnpm version 9 globally:
+
+```shell
+npm -g install pnpm@9
+```
+
+## Project dependencies
+
+Go to the agent folder located in the `packages/agent` folder. You should see a package.json in that location. This is the agent module of the
+web-wallet project.
+
+Let's install the dependencies first
+
+```shell
+pnpm install
+```
+
+Now let's build the project, so that we are sure that everything is in order. During exercises this is not strictly necessary given we will start the
+agent directly from the typescript files, instead of first compiling them to javascript.
+
+```shell
+pnpm build
+```
+
+## Start the agent for the first time
+
+Let's start the agent for the first time. Since we haven't configured the agent yet, don't be surprised if the agent exists with an error message. We
+just want to make sure it actually starts.
+
+```shell
+pnpm run start:dev
+```
+
+You should see console logs appearing. If the agent encounters an error, which is expected at this point, as we haven't configured it yet, it will
+exit with an error.
+
+We are now ready to [configure the agent](/exercises/agent/configure).
+
+## Ngrok
+
+We need to have a reverse proxy installed that terminates TLS for us. Meaning that the agent will be exposed on an https:// endpoint. This ensures
+that the wallet actually will be able to access your agent, as the store versions do not allow access over an unsecured connection.
+
+Download ngrok from the internet. Make sure it runs and listens for port 5010 locally. That is the default port the agent will use for the REST APIs.
+
+```shell
+ngrok http 5010
+```
+
+You now should see a screen like:
+
+![Ngrok](ngrok.png)
+
+Make sure to copy the URL that is similar to the red underlined url. You will need it during the configuration steps
+
+
+
+## 3. Using docker
+
+We currently do not suggest to run the exercises with docker. If you want to run in demo, test or production environments than the Docker approach is
+preferable, but without volume mounts for configuration changes using it for exercises is not recommended.

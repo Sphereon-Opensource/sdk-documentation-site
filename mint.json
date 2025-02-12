@@ -76,7 +76,9 @@
         "agent/demo-agent-setup",
         "changelogs/ssi-sdk/general",
         "changelogs/ssi-sdk/pd-manager-rest-api",
-        "concepts/DIDs"
+        "concepts/DIDs",
+        "exercises/agent/setup-development",
+        "exercises/agent/configure"
       ]
     },
     {
@@ -87,6 +89,7 @@
         "exercises/oid4vc/oid4vci/credential-offer-exercises",
         "exercises/oid4vc/oid4vp/oid4vp-exercises",
         "exercises/oid4vc/oid4vci/credential-design-exercises",
+
         {
           "group": "Issuance (OID4VCI)",
           "pages": [
