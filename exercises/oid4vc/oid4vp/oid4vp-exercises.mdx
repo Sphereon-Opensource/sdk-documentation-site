@@ -16,6 +16,12 @@ In the below exercises we will be creating credential offers in different ways. 
 <Info>We suggest to use a tool like Postman or curl to perform these exercises and examples. Although we provide an integrated UI in these docs and links to our swagger hub, we
     are also developers and in our experience new learnings stick better whilst actually doing instead of clicking.</Info>
 
+<Warning>If you are running a local agent with ngrok, you cannot use the Swaggerhub examples directly. What you need to do is load the OpenAPI
+    definition through the swagger editor like this:
+    https://petstore.swagger.io/?url=https://api.swaggerhub.com/apis/SphereonInt/OID4VP/0.1.0 Now you should be able to execute against
+    localhost.</Warning>
+
+
 # Authorization request and session initiation
 In the below exercises you will learn how to present credentials using an Authorization Request by `value` and by `reference`. You will actually present using a mobile wallet!
 
