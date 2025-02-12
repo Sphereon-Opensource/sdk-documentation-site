@@ -11,7 +11,7 @@ info:
 
     The backend/webapp endpoint describe:
     - How to create a session and get a URI to include in a QR code or link
-    - How to poll the issueance status
+    - How to poll the issuance status
     - How to access a specific credential offer
 tags:
   - name: Backend
@@ -291,7 +291,7 @@ components:
         credential_issuer:
           type: string
           description: URL of the credential issuer
-          example: 'https://agent.findynet.demo.sphereon.com/did-web/oid4vci'
+          example: 'https://agent.findynet.demo.sphereon.com/oid4vci'
         credential_configuration_ids:
           type: array
           description: Identifiers for the offered credential configurations
@@ -531,12 +531,14 @@ paths:
                     'urn:ietf:params:oauth:grant-type:pre-authorized_code':
                       pre-authorized_code: d270fee1-9185-4e60-9901-d291e1338d7a
                   credentialDataSupplierInput:
-                    naam: Example name
-                    rsin: RSIN example
-                    straatnaam: Street example
-                    huisnummer: Housenumber example
-                    postcode: Zipcode example
-                    plaats: Place example
+                    birthDate: "2000-02-11"
+                    startDate: "2040-01-01"
+                    endDate: "2070-05-10"
+                    givenName: John
+                    familyName: Doe
+                    personalAdministrativeNumber: 12345678
+                    typeCode: PRE
+                    typeName: Pre Pension
               Pre Authorized Code simple with qr code:
                 value:
                   credential_configuration_ids:
@@ -546,12 +548,14 @@ paths:
                       pre-authorized_code: d270fee1-9185-4e60-9901-d291e1338d7b
                   qrCodeOpts: {}
                   credentialDataSupplierInput:
-                    naam: Example name
-                    rsin: RSIN example
-                    straatnaam: Street example
-                    huisnummer: Housenumber example
-                    postcode: Zipcode example
-                    plaats: Place example
+                    birthDate: "2000-02-11"
+                    startDate: "2040-01-01"
+                    endDate: "2070-05-10"
+                    givenName: John
+                    familyName: Doe
+                    personalAdministrativeNumber: 12345678
+                    typeCode: PRE
+                    typeName: Pre Pension
               Pre Authorized Code with pincode:
                 value:
                   credential_configuration_ids:
@@ -565,12 +569,14 @@ paths:
                       description: Please check your e-mail for a pin code
                   client_id: 'https://wallet.example.com'
                   credentialDataSupplierInput:
-                    naam: Example name
-                    rsin: RSIN example
-                    straatnaam: Street example
-                    huisnummer: Housenumber example
-                    postcode: Zipcode example
-                    plaats: Place example
+                    birthDate: "2000-02-11"
+                    startDate: "2040-01-01"
+                    endDate: "2070-05-10"
+                    givenName: John
+                    familyName: Doe
+                    personalAdministrativeNumber: 12345678
+                    typeCode: PRE
+                    typeName: Pre Pension
       responses:
         '200':
           description: Successful response
@@ -591,7 +597,7 @@ paths:
                     type: object
                     description: Transaction code details for tracking
               example:
-                uri: 'openid-credential-offer://?credential_offer=%7B%22credential_issuer%22%3A%22https%3A%2F%2Fagent.findynet.demo.sphereon.com%2Fdid-web%2Foid4vci%22%2C%22credential_configuration_ids%22%3A%5B%22PensionSdJwt%22%5D%2C%22grants%22%3A%7B%22urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Apre-authorized_code%22%3A%7B%22pre-authorized_code%22%3A%22d270fee1-9185-4e60-9901-d291e1338d7a%22%7D%7D%7D'
+                uri: 'openid-credential-offer://?credential_offer=%7B%22credential_issuer%22%3A%22https%3A%2F%2Fagent.ssi.dev.sphereon.com%2Fdid-web%2Foid4vci%22%2C%22credential_configuration_ids%22%3A%5B%22PensionSdJwt%22%5D%2C%22grants%22%3A%7B%22urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Apre-authorized_code%22%3A%7B%22pre-authorized_code%22%3A%22d270fee1-9185-4e60-9901-d291e1338d7a%22%7D%7D%7D'
   /webapp/credential-offer-status:
     post:
       summary: Get credential issuance status
@@ -764,7 +770,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 servers:
-  - description: Did Web JWT example issuer
-    url: 'https://agent.findynet.demo.sphereon.com/did-web/oid4vci'
+  - description: Example issuer
+    url: 'https://agent.findynet.demo.sphereon.com/oid4vci'
   - description: localhost
-    url: 'https://localhost:5010/oid4vci-local'
+    url: 'http://localhost:5010/oid4vci'

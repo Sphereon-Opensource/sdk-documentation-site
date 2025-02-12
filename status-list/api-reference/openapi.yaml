@@ -5,6 +5,7 @@ info:
   description: This API provides endpoints for managing status lists related to digital credentials.
 servers:
   - url: https://agent.findynet.demo.sphereon.com
+  - url: http://localhost:5010
 tags:
   - name: StatusList
     description: Status List Management
@@ -384,7 +385,7 @@ components:
         url:
           type: string
           description: The URL to fetch details of this specific status list.
-          example: "https://agent.findynet.demo.sphereon.com/status-lists/123e4567-e89b-12d3-a456-426614174001"
+          example: "https://agent.ssi.dev.sphereon.com/status-lists/123e4567-e89b-12d3-a456-426614174001"
   responses:
     CreateStatusListResponse:
       description: Status list created successfully.

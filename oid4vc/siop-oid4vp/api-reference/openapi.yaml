@@ -202,7 +202,7 @@ paths:
                     - none
                     - vp
                     - cs-flat
-                  example: cs-flat
+                  example: vp
               required:
                 - correlationId
                 - definitionId
