@@ -1,0 +1,84 @@
+---
+title: Authorization code
+description: 'Authorization code flow with external OIDC server'
+---
+
+The agent by default supports so called pre-authorized-code flows, meaning that the issuer expects a user to already have done an authentication elsewhere, for instance in a portal. It could also be that the user is just visiting a public website without any form of authentication.
+
+We also support the so called authorization code flow. This means the user will be authenticated during the issuance process, using the user agent (browser) on the device where the wallet resides. This typically provides as better user binding, as it is not really possible with this flow to hijack a session by copying a QR code for instance (you would have to authenticate in the process) and it happens just before getting the access token and the actual credential from the issuer.
+
+# Configuration changes needed
+
+In order to configure this on the agent the following changes are needed:
+
+## List the authorization server
+In `conf/oid4vci_medata/your-issuer.json` you should have the following line in the `metadata` part:
+
+```json
+{
+    "metadata": {
+        ...
+        "authorization_servers": ["https://your-oidc-server"],
+        ...
+    }
+}
+```
+
+example:
+```json
+{
+    "metadata": {
+        ...
+        "authorization_servers": ["https://auth01.test.sphereon.com/auth/realms/vdx"],
+        ...
+    }
+}
+```
+
+## Configure the resources server client options
+In order for the Issuer to verify with the OIDC Authorization Server the Authorization Server client options need to be specified. This needs to be a `confidential` client in order to access the introspection endpoint so the issuer can check access tokens for validity with the OIDC Authorization Server.
+
+Example configuration file changes needed in `conf/oid4vci_options/your-options.json` in the `issuerOpts` object:
+
+```json
+{
+   ...
+   "issuerOpts": {
+      ...
+      "asClientOpts": {
+          "client_id": "your-auth-code-issuer-client-id",
+          "client_secret": "your-secret"
+      },
+      ...
+    }
+   },
+   ...
+}
+```
+
+## Authorization code grant
+With the external authorization server defined in the `authorization_servers` metadata object and the `asClientOpts` part of the `issuerOpts` of `oid4vci_options` the agent now will delegate access token verification to the OIDC Authorization Server and wallets will automatically use the external authorization server, provided an authorization code grant is being used in the credential offer:
+
+```json
+{
+    "credential_configuration_ids": [
+        "PensionSdJwt"
+    ],
+    "grants": {
+        "authorization_code": {
+            "issuer_state": "auth-9185-4e60-9901-d291e1338d7a"
+        }
+    },
+    "qrCodeOpts": {},
+    "credentialDataSupplierInput": {
+        "birthDate": "2000-02-11",
+        "startDate": "2040-01-01",
+        "endDate": "2070-05-10",
+        "givenName": "John",
+        "familyName": "Doe",
+        "personalAdministrativeNumber": 12345678,
+        "typeCode": "PRE",
+        "typeName": "Pre Pension"
+    }
+}
+```

@@ -95,6 +95,7 @@
           "pages": [
             "oid4vc/oid4vci/introduction",
             "oid4vc/oid4vci/REST",
+
             {
               "group": "OpenAPI",
               "pages": [
@@ -110,6 +111,8 @@
                 "oid4vc/oid4vci/credential-design/credential-claims"
               ]
             },
+            "oid4vc/oid4vci/authorization-code",
+            "oid4vc/oid4vci/first-party",
             {
               "group": "Development",
               "pages": [

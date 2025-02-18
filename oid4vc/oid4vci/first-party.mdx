@@ -1,0 +1,52 @@
+---
+title: 1st party flow
+description: 'Oid4vp during Oid4vci'
+---
+
+## Presentation definition Id
+For now the 1st party flow is global for all OID4VCI credentials offered, which obviously isn't flexible enough. This will be changed in the future.
+
+In order to enable support for the 1st party flow the following change needs to be made to the `conf/oid4vci_options/your-options.json` file and the `issuerOpts` section:
+
+```json
+{
+   ...
+   "issuerOpts": {
+      ...
+      "presentationDefinitionId": "your definition id as known by the RP",
+      ...
+
+   },
+   ...
+}
+```
+
+Example
+```json
+{
+   ...
+   "issuerOpts": {
+      ...
+      "presentationDefinitionId": "PensionSdJwt",
+      ...
+
+   },
+   ...
+}
+```
+
+## Enable Authorization Challenge Endpoint options
+
+In order to enable the 1st party flow, the so called authorization challenge endpoint needs to be enabled in `conf/oid4vci_options/your-options.json`:
+
+```json
+{
+  "endpointOpts": {
+    ...
+    "authorizationChallengeOpts": {
+      "enabled": true
+    },
+    ...
+  }
+}
+```
