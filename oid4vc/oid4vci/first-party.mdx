@@ -44,7 +44,9 @@ In order to enable the 1st party flow, the so called authorization challenge end
   "endpointOpts": {
     ...
     "authorizationChallengeOpts": {
-      "enabled": true
+      "enabled": true,
+      "createAuthRequestUriEndpointPath": "1stparty/create-auth",
+      "verifyAuthResponseEndpointPath": "1stparty/create-auth"
     },
     ...
   }
