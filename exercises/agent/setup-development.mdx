@@ -7,10 +7,10 @@ The exercises on the [documentation site](https://docs.sphereon.com) are using t
 of least complex to more complex:
 
 1. Use the online demo environment
-2. Install a demo agent from source with NodeJS
-3. Install a demo agent with Docker
+2. Install a demo agent with Docker
+3. Install a demo agent from source with NodeJS
 
-Currently, we advise to use method 1 or method 2, as method 3 needs a bit more work to easily test with changes applied to configurations
+Currently, we advise to use method 1 or method 2
 
 # 1. Using the online demo environment
 
@@ -19,7 +19,11 @@ the [documentation site](https://docs.sphereon.com) or the easier online Swagger
 
 There is nothing you need to do additionally. You can start with the exercises straight away.
 
-# 2. From source with NodeJS
+## 2. Using docker
+
+To setup the agent with Docker, please follow the [Setup Docker](/exercises/agent/setup-docker) page
+
+# 3. From source with NodeJS
 
 ## Checkout repository
 
@@ -107,9 +111,3 @@ You now should see a screen like:
 
 Make sure to copy the URL that is similar to the red underlined url. You will need it during the configuration steps
 
-
-
-## 3. Using docker
-
-We currently do not suggest to run the exercises with docker. If you want to run in demo, test or production environments than the Docker approach is
-preferable, but without volume mounts for configuration changes using it for exercises is not recommended.

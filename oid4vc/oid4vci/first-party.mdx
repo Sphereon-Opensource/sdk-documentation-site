@@ -1,12 +1,55 @@
 ---
-title: 1st party flow
-description: 'Oid4vp during Oid4vci'
+title: Presentation during issuance
+description: 'Presentation (Oid4vp) during Issuance (Oid4vci)'
 ---
+# Background
+The Sphereon Agent software and wallet has experimental support for so called first party applications. This means we can do credential presentations during the issuance process, without having to leave the wallet in the process. For now we are using a request/response parameter (not shown/discussed below) that is Sphereon only, meaning it is not interoperable with other wallets. We will change that in the near future, once the specs and codepaths for 1st party stabelize.
+
+More background information:
+
+- [Germany OpenCode document](https://bmi.usercontent.opencode.de/eudi-wallet/eidas-2.0-architekturkonzept/flows/Presentation-During-Issuance)
+
+- [IETF OAuth2 First-Party applications specification](https://www.ietf.org/archive/id/draft-parecki-oauth-first-party-apps-02.html)
+
+# Configuration changes
+In order to enable a 1st party flow to perform presentation during issuance, you need the below configuration values. The examples folder contains configurations to support the 1st party flow. The Swagger API can be found and tested at http://localhost:5010/1stparty/oid4vci/api-docs
+
+## Adding the endpoint to metadata
+In order to let a wallet know that this is a first party application we need to add a new parameter to the issuer and authorization server metadata, called `authorization_challenge_endpoint`.
+
+`conf/oid4vci_metadata/1stparty-issuer.json`:
+
+```json
+{
+   ...
+   "metadata": {
+      ...
+      "authorization_challenge_endpoint": "https://ca2b910c76b1.ngrok.app/oid4vci/authorize-challenge",
+      ...
+   },
+   ...
+}
+```
+`conf/oid4vci_metadata/1stparty-authorization-server.json`:
+
+```json
+{
+   ...
+   "metadata": {
+      ...
+      "authorization_challenge_endpoint": "https://ca2b910c76b1.ngrok.app/oid4vci/authorize-challenge",
+      ...
+   },
+   ...
+}
+```
 
 ## Presentation definition Id
-For now the 1st party flow is global for all OID4VCI credentials offered, which obviously isn't flexible enough. This will be changed in the future.
+<Note>For now the 1st party flow is global for all OID4VCI credentials offered, which obviously isn't flexible enough. This will be changed in the future.</Note>
 
-In order to enable support for the 1st party flow the following change needs to be made to the `conf/oid4vci_options/your-options.json` file and the `issuerOpts` section:
+<Warning>The 1st party flow only works between Sphereon agent(s) for now. There needs to be a network connection between the issuer agent and the RP agent (if not the same agent) and the RP endpoint for now is not protected with authentication (obviously you should in production and/or IP firewall the webapp/backend endpoints)</Warning>
+
+In order to enable support for the 1st party flow the following change needs to be made to the `conf/oid4vci_options/your-options-file-for-instance-called-1stparty.json` file and the `issuerOpts` section:
 
 ```json
 {
@@ -37,7 +80,9 @@ Example
 
 ## Enable Authorization Challenge Endpoint options
 
-In order to enable the 1st party flow, the so called authorization challenge endpoint needs to be enabled in `conf/oid4vci_options/your-options.json`:
+In order to enable the 1st party flow, the so called authorization challenge endpoint needs to be enabled in `conf/oid4vci_options/your-options-file-for-instance-called-1stparty.json`:
+
+<Note>The "Path" in the below configuration values is a bit misleading. It is a full URL to the REST API of a Sphereon Agent providing OID4VP support. We will rename these params in the future</Note>
 
 ```json
 {
@@ -45,8 +90,8 @@ In order to enable the 1st party flow, the so called authorization challenge end
     ...
     "authorizationChallengeOpts": {
       "enabled": true,
-      "createAuthRequestUriEndpointPath": "1stparty/create-auth",
-      "verifyAuthResponseEndpointPath": "1stparty/create-auth"
+      "createAuthRequestUriEndpointPath": "https://your-verifier-host/oid4vp/webapp/definitions/:definitionId/auth-requests",
+      "verifyAuthResponseEndpointPath": "https://your-verifier-host/oid4vp/webapp/auth-status"
     },
     ...
   }
