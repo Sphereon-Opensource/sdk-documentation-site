@@ -31,6 +31,8 @@ There are two major specifications supported by our SDK. Both define how these s
   multiple statuses (such as active, suspended, revoked, or other custom states). Moreover, the OAuth status list can be represented in various formats—most notably as a JSON Web
   Token (JWT) or using Concise Binary Object Representation (CBOR). It can be used with Verifiable Credentials Data Model 1.1/2.0 credentials, JWTs, SD-JWTs.
 
+* **Bitstring Status List:** // TODO
+
 Both approaches share the common goal of efficiently and securely managing status information while also ensuring that the process of checking a credential's or token’s status
 respects user privacy. A particularly interesting aspect of these systems is a concept known as herd privacy, which protects the privacy of individual status queries.
 
@@ -67,6 +69,9 @@ parties (RPs) or digital wallets check the status of a credential or token. At t
           The status list can be encapsulated as a JWT, which integrates well with existing OAuth infrastructures and supports robust cryptographic verification.
         * **CBOR (Concise Binary Object Representation):**
           Alternatively, CBOR can be used for scenarios where a compact, binary encoding is preferable—especially in environments with limited bandwidth or processing power.
+
+### Bitstring Status List
+// TODO
 
 ## Herd Privacy: Safeguarding Query Confidentiality
 
@@ -277,7 +282,7 @@ lays the groundwork for designing resilient, interoperable, and privacy-preservi
 
 ## 1. W3C Status List v2021
 
-**Description:**  
+**Description:**
 The W3C Status List v2021 specification provides a method to manage the status (e.g., active, revoked) of digital credentials. It employs an index-based mechanism in which each
 position in a bit array represents the state of a credential. Typically, a "0" indicates an active credential and a "1" indicates a revoked one. This status list is issued as a
 Verifiable Credential using the Verifiable Credential Data Model (VCDM).
@@ -288,14 +293,14 @@ Verifiable Credential using the Verifiable Credential Data Model (VCDM).
 - Integrated as a Verifiable Credential using W3C’s data model (VCDM 1.1).
 - Designed for efficient revocation checking.
 
-**Link:**  
+**Link:**
 [W3C Status List v2021](https://www.w3.org/TR/2023/WD-vc-status-list-20230427/)
 
 ---
 
 ## 2. OAuth Status List (Token Status List)
 
-**Description:**  
+**Description:**
 The OAuth Status List (also known as Token Status List) is designed for managing the status of OAuth tokens. Unlike the binary approach in the W3C Status List, this specification
 allows for multiple status values (e.g., active, suspended, revoked) by supporting different bit sizes per entry. The OAuth status list can be represented in different encoding
 formats, notably as a JSON Web Token (JWT) or using Concise Binary Object Representation (CBOR).
@@ -306,14 +311,14 @@ formats, notably as a JSON Web Token (JWT) or using Concise Binary Object Repres
 - Can be encoded as a JWT or in CBOR for compactness.
 - Useful for complex token lifecycle states.
 
-**Link:**  
+**Link:**
 [OAuth Status List (IETF Draft)](https://datatracker.ietf.org/doc/draft-ietf-oauth-status-list/)
 
 ---
 
 ## 3. IETF SD-JWT VC (Selective Disclosure JWT for Verifiable Credentials)
 
-**Description:**  
+**Description:**
 SD-JWT (Selective Disclosure JWT) is an approach that allows credential holders to reveal only selected parts of their credentials. In the context of Verifiable Credentials (VCs),
 SD-JWT enables selective disclosure by embedding cryptographic proofs alongside the JWT. This supports privacy-preserving presentations where only necessary claims are shared.
 
@@ -323,14 +328,14 @@ SD-JWT enables selective disclosure by embedding cryptographic proofs alongside 
 - Provides a way to balance privacy with verifiability.
 - Currently being standardized within the IETF.
 
-**Link:**  
+**Link:**
 [IETF SD-JWT (Selective Disclosure JWT) Draft](https://datatracker.ietf.org/doc/draft-ietf-oauth-selective-disclosure-jwt/)
 
 ---
 
 ## 4. W3C Verifiable Credentials Data Model (VCDM) 1.1
 
-**Description:**  
+**Description:**
 The W3C Verifiable Credentials Data Model (VCDM) 1.1 is the framework that defines how digital credentials are issued, presented, and verified. It provides the data structures and
 protocols that underpin the creation and usage of verifiable credentials, including how status lists (like the W3C Status List v2021) are incorporated.
 
@@ -340,14 +345,14 @@ protocols that underpin the creation and usage of verifiable credentials, includ
 - Ensures interoperability among credential issuers, holders, and verifiers.
 - Forms the basis for integrating status information into credentials.
 
-**Link:**  
+**Link:**
 [W3C VCDM 1.1](https://www.w3.org/TR/vc-data-model/)
 
 ---
 
 ## 5. W3C Verifiable Credentials Data Model (VCDM) 2.0
 
-**Description:**  
+**Description:**
 VCDM 2.0 is the forthcoming evolution of the Verifiable Credentials Data Model. It aims to address new requirements, improve flexibility, and incorporate lessons learned from the
 deployment of VCDM 1.1. While still under development, VCDM 2.0 is expected to further enhance the ecosystem of verifiable credentials and related technologies.
 
@@ -357,6 +362,6 @@ deployment of VCDM 1.1. While still under development, VCDM 2.0 is expected to f
 - Expected to include enhancements and additional features.
 - Currently under development; specifications may evolve.
 
-**Link:**  
-[W3C VCDM 2.0](https://www.w3.org/TR/vc-data-model-2.0/)  
+**Link:**
+[W3C VCDM 2.0](https://www.w3.org/TR/vc-data-model-2.0/)
 *(Note: This link points to the current draft or working version. Check the W3C website for the latest updates.)*

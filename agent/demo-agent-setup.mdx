@@ -51,7 +51,7 @@ Example OID4VCI metadata can be found [here](https://github.com/Sphereon-Opensou
 |                     | `credential_endpoint`        | URL of the Credential Issuer's Credential Endpoint. This URL MUST use the https scheme and MAY contain port, path and query parameter components.                                                                                                                                                                                                  |
 |                     | `display`                    | (optional) An array of objects, where each object contains display properties of a Credential Issuer for a certain language. Below is a non-exhaustive list of valid parameters that MAY be included: name (optional) string and locale (optional) string                                                                                          |
 |                     | `credentials_supported`      | A JSON array containing a list of JSON objects, each of them representing metadata about a separate credential type that the Credential Issuer can issue. The JSON objects in the array MUST conform to the structure of the [OID4VCI spec](https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html#credential-metadata-object). |
-|                     | `credential_supplier_config` | Configuration settings for the provider of the credentials.                                                                                                                                                                                                                                                                                        | 
+|                     | `credential_supplier_config` | Configuration settings for the provider of the credentials.                                                                                                                                                                                                                                                                                        |
 
 #### 3. oid4vci_options
 
@@ -75,22 +75,23 @@ This is the directory where custom OID4VCI options are maintained. An example ca
 Here, you will store configuration files related to OpenID for Verifiable Presentations (OID4VP). Be aware that any configuration file in this directory represents an individual
 Relying Party instance. Also be aware that a single Relying Party can host multiple Presentation definitions at the same time.
 
-| Variable       | Sub-Variable        | Description                                                                                             |
-|----------------|---------------------|---------------------------------------------------------------------------------------------------------|
-| `definitionId` |                     | Unique identifier associated with a specific credential definition.                                     |
-| `rpOpts`       |                     | Configuration options for the Relying Party (RP).                                                       |
-|                | `responseMode`      | (optional) Specifies the method that the RP uses to receive the response from the OpenID Provider.      |
-|                | `supportedVersions` | (optional) Lists the versions supported by the RP.                                                      |
-|                | `sessionManager`    | (optional) An instance of IRPSessionManager from Sphereon's SIOP-OID4VP library managing session state. |
-|                | `expiresIn`         | (optional) Defines the duration after which the RP's request or session should expire.                  |
-|                | `eventEmitter`      | (optional) An object used to handle events, enabling asynchronous event-driven programming.             |
-|                | `didOpts`           | Options related to the Decentralized Identifier (DID) of the verifier.                                  |
+| Variable  | Sub-Variable        | Description                                                                                                                                      |
+|-----------|---------------------|--------------------------------------------------------------------------------------------------------------------------------------------------|
+| `queryId` |                     | Unique identifier associated with a specific DCQL definition.                                                                                    |
+| `rpOpts`  |                     | Configuration options for the Relying Party (RP).                                                                                                |
+|           | `responseMode`      | (optional) Specifies the method that the RP uses to receive the response from the OpenID Provider.                                               |
+|           | `supportedVersions` | (optional) Lists the versions supported by the RP.                                                                                               |
+|           | `sessionManager`    | (optional) An instance of IRPSessionManager from Sphereon's SIOP-OID4VP library managing session state.                                          |
+|           | `expiresIn`         | (optional) Defines the duration after which the RP's request or session should expire.                                                           |
+|           | `eventEmitter`      | (optional) An object used to handle events, enabling asynchronous event-driven programming.                                                      |
+|           | `didOpts`           | Options related to the Decentralized Identifier (DID) of the verifier.                                                                           |
+|           | `clientMetadataOpts`| Defines how the Wallet can determine Credential formats, proof types and algorithms supported by the Verifier to be used in a protocol exchange. |
 
-#### 5. presentation_definitions
+#### 5. dcql_definitions
 
 The content of this directory is essential for defining how the agent understands and processes presentation requests. This is only applied if your demo application is asking the
 user for their VerifiableCredential(s) from the wallet. For an in-depth explanation of presentation_definition, refer to
-the [Presentation Exchange Documentation](https://identity.foundation/presentation-exchange/). To understand its role in the context of
+the [Digital Credentials Query Language (DCQL) Documentation](https://openid.net/specs/openid-4-verifiable-presentations-1_0.html#name-digital-credentials-query-l). To understand its role in the context of
 the [OID4VP specification](https://openid.net/specs/openid-4-verifiable-presentations-1_0.html), please consult the provided link.
 
 #### 6. templates
@@ -137,6 +138,8 @@ Your `.env.local` file should contain the following variables with values tailor
 | `OID4VCI_ENABLED`                | Boolean to activate OpenID for Verifiable Credentials Issuance (OID4VCI).                                                |
 | `CONF_PATH`                      | Path to the agent’s configuration files, detailed above.                                                                 |
 | `UNIVERSAL_RESOLVER_RESOLVE_URL` | Endpoint URL for the universal resolver service for resolving DIDs.                                                      |
+| `STATUS_LIST_TYPE`               | Status list type of the configured status list. Either `StatusList2021`, `OAuthStatusList` or `BitstringStatusList`      |
+
 
 **Note**: If you intend to access the agent through a mobile device, ensure that you do not use `localhost` or `127.0.0.1`. Instead, use a local IP address that is reachable from
 your mobile device within the same network.
