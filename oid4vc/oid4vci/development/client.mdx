@@ -47,15 +47,15 @@ This initiates the client using a URI obtained from the Issuer using a link (URL
 already fetching the Server Metadata
 
 ```typescript
-import { OpenID4VCIClientV1_0_13 } from '@sphereon/oid4vci-client';
+import { OpenID4VCIClientV1_0_15 } from '@sphereon/oid4vci-client';
 
 // The client is initiated from a URI. This URI is provided by the Issuer, typically as a URL or QR code.
-const client = await OpenID4VCIClientV1_0_13.fromURI({
-  uri: 'openid-initiate-issuance://?issuer=https%3A%2F%2Fissuer.research.identiproof.io&credential_type=OpenBadgeCredentialUrl&pre-authorized_code=4jLs9xZHEfqcoow0kHE7d1a8hUk6Sy-5bVSV2MqBUGUgiFFQi-ImL62T-FmLIo8hKA1UdMPH0lM1xAgcFkJfxIw9L-lI3mVs0hRT8YVwsEM1ma6N3wzuCdwtMU4bcwKp&user_pin_required=true',
-  kid: 'did:example:ebfeb1f712ebc6f1c276e12ec21#key-1', // Our DID.  You can defer this also to when the acquireCredential method is called
-  alg: Alg.ES256, // The signing Algorithm we will use. You can defer this also to when the acquireCredential method is called
-  clientId: 'test-clientId', // The clientId if the Authrozation Service requires it.  If a clientId is needed you can defer this also to when the acquireAccessToken method is called
-  retrieveServerMetadata: true, // Already retrieve the server metadata. Can also be done afterwards by invoking a method yourself.
+const client = await OpenID4VCIClientV1_0_15.fromURI({
+  uri: 'openid-credential-offer://?credential_offer=eyJjcmVkZW50aWFsX2lzc3VlciI6Imh0dHBzOi8vaXNzdWVyLnJlc2VhcmNoLmlkZW50aXByb29mLmlvIiwiY3JlZGVudGlhbF9jb25maWd1cmF0aW9uX2lkcyI6WyJPcGVuQmFkZ2VDcmVkZW50aWFsIl0sImdyYW50cyI6eyJ1cm46aWV0ZjpwYXJhbXM6b2F1dGg6Z3JhbnQtdHlwZTpwcmUtYXV0aG9yaXplZF9jb2RlIjp7InByZS1hdXRob3JpemVkX2NvZGUiOiI0akxzOXhaSEVmcWNvb3cwa0hFN2QxYThoVWs2U3ktNWJWU1YyTXFCVUdVZ2lGRlFpLUltTDYyVC1GbUxJbzhoS0ExVWRNUEgwbE0xeEFnY0ZrSmZ4SXc5TC1sSTNtVnMwaFJUOFlWd3NFTTFtYTZOM3d6dUNkd3RNVTRiY3dLcCIsInR4X2NvZGUiOnsiaW5wdXRfbW9kZSI6Im51bWVyaWMiLCJsZW5ndGgiOjR9fX19',
+  kid: 'did:example:ebfeb1f712ebc6f1c276e12ec21#key-1',
+  alg: Alg.ES256,
+  clientId: 'test-clientId',
+  retrieveServerMetadata: true,
 });
 
 console.log(client.getIssuer()); // https://issuer.research.identiproof.io
@@ -66,11 +66,11 @@ console.log(client.getAccessTokenEndpoint()); // https://auth.research.identipro
 Using https scheme
 
 ```typescript
-import { OpenID4VCIClientV1_0_13 } from '@sphereon/oid4vci-client';
+import { OpenID4VCIClientV1_0_15 } from '@sphereon/oid4vci-client';
 
 // The client is initiated from a URI. This URI is provided by the Issuer, typically as a URL or QR code.
-const client = await OpenID4VCIClientV1_0_13.fromURI({
-  uri: 'https://launchpad.vii.electron.mattrlabs.io?credential_offer=%7B%22credential_issuer%22%3A%22https%3A%2F%2Flaunchpad.vii.electron.mattrlabs.io%22%2C%22credentials%22%3A%5B%7B%22format%22%3A%22ldp_vc%22%2C%22types%22%3A%5B%22OpenBadgeCredential%22%5D%7D%5D%2C%22grants%22%3A%7B%22urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Apre-authorized_code%22%3A%7B%22pre-authorized_code%22%3A%22UPZohaodPlLBnGsqB02n2tIupCIg8nKRRUEUHWA665X%22%7D%7D%7D',
+const client = await OpenID4VCIClientV1_0_15.fromURI({
+  uri: 'https://launchpad.vii.electron.mattrlabs.io?credential_offer=%7B%22credential_issuer%22%3A%22https%3A%2F%2Flaunchpad.vii.electron.mattrlabs.io%22%2C%22credential_configuration_ids%22%3A%5B%22OpenBadgeCredential%22%5D%2C%22grants%22%3A%7B%22urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Apre-authorized_code%22%3A%7B%22pre-authorized_code%22%3A%22UPZohaodPlLBnGsqB02n2tIupCIg8nKRRUEUHWA665X%22%7D%7D%7D',
   kid: 'did:example:ebfeb1f712ebc6f1c276e12ec21#key-1', // Our DID.  You can defer this also to when the acquireCredential method is called
   alg: Alg.ES256, // The signing Algorithm we will use. You can defer this also to when the acquireCredential method is called
   clientId: 'test-clientId', // The clientId if the Authrozation Service requires it.  If a clientId is needed you can defer this also to when the acquireAccessToken method is called
@@ -93,6 +93,30 @@ the `retrieveServerMetadata` option, you can use this method to fetch it from th
 const metadata = await client.retrieveServerMetadata();
 ```
 
+### Authorization Server Discovery
+
+In v1.0-15, Credential Issuers can work with multiple Authorization Servers. The metadata includes an `authorization_servers` array:
+```typescript
+const metadata = await client.retrieveServerMetadata();
+
+// Check if multiple authorization servers are supported
+if (metadata.credentialIssuerMetadata?.authorization_servers) {
+  console.log('Supported Authorization Servers:',
+    metadata.credentialIssuerMetadata.authorization_servers);
+}
+
+// Important: When a Credential Offer includes an `authorization_server` parameter,
+// the Wallet MUST verify it matches one of the values in the authorization_servers array
+const offerAuthServer = client.credentialOffer?.grants?.['urn:ietf:params:oauth:grant-type:pre-authorized_code']?.authorization_server;
+if (offerAuthServer && metadata.credentialIssuerMetadata?.authorization_servers) {
+  const isValid = metadata.credentialIssuerMetadata.authorization_servers.includes(offerAuthServer);
+  if (!isValid) {
+    throw new Error('Authorization server in offer not supported by issuer');
+  }
+}
+```
+
+
 ## Access token from Authorization Server
 
 Next we need to get an Access token from the OAuth2 Authorization Server using the token endpoint. This endpoint is
@@ -100,16 +124,21 @@ found from the metadata if the server supports it. Otherwise a default location 
 Initiate Issuance Request is used.
 
 ```typescript
-const accessToken = await client.acquireAccessToken({ pin: '1234' });
+const accessToken = await client.acquireAccessToken({ tx_code: '1234' });
 console.log(accessToken);
 /**
  * {
  *   access_token: 'ey6546.546654.64565',
  *   authorization_pending: false,
- *   c_nonce: 'c_nonce2022101300',
- *   c_nonce_expires_in: 2025101300,
  *   interval: 2025101300,
  *   token_type: 'Bearer',
+ *   authorization_details: [
+ *     {
+ *       type: 'openid_credential',
+ *       credential_configuration_id: 'OpenBadgeCredential',
+ *       credential_identifiers: ['badge-2024-001']
+ *     }
+ *   ]
  * }
  */
 ```
@@ -148,14 +177,12 @@ Now it is time to get the actual credential
 
 ```typescript
 const credentialResponse = await client.acquireCredentials({
-  credentialTypes: 'OpenBadgeCredential',
+  credential_configuration_id: 'OpenBadgeCredential', // Use the ID from metadata
   proofCallbacks: callbacks,
-  format: 'jwt_vc_json',
   alg: Alg.ES256K,
   kid: 'did:example:ebfeb1f712ebc6f1c276e12ec21#keys-1',
 });
 console.log(credentialResponse.credential);
-// JWT format. (LDP / JSON-LD ('ldp_vc' / 'jwt_vc_json-ld') is also supported by the client)
 // eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCJ9.eyJ2YyI6eyJAY29udGV4dCI6WyJodHRwczovL3d3dy53My5vcmcvMjAxOC9jcmVkZW50aWFscy92MSIsImh0dHBzOi8vd3d3LnczLm9yZy8yMDE4L2NyZWRlbnRpYWxzL2V4YW1wbGVzL3YxIl0sImlkIjoiaHR0cDovL2V4YW1wbGUuZWR1L2NyZWRlbnRpYWxzLzM3MzIiLCJ0eXBlIjpbIlZlcmlmaWFibGVDcmVkZW50aWFsIiwiVW5pdmVyc2l0eURlZ3JlZUNyZWRlbnRpYWwiXSwiaXNzdWVyIjoiaHR0cHM6Ly9leGFtcGxlLmVkdS9pc3N1ZXJzLzU2NTA0OSIsImlzc3VhbmNlRGF0ZSI6IjIwMTAtMDEtMDFUMDA6MDA6MDBaIiwiY3JlZGVudGlhbFN1YmplY3QiOnsiaWQiOiJkaWQ6ZXhhbXBsZTplYmZlYjFmNzEyZWJjNmYxYzI3NmUxMmVjMjEiLCJkZWdyZWUiOnsidHlwZSI6IkJhY2hlbG9yRGVncmVlIiwibmFtZSI6IkJhY2hlbG9yIG9mIFNjaWVuY2UgYW5kIEFydHMifX19LCJpc3MiOiJodHRwczovL2V4YW1wbGUuZWR1L2lzc3VlcnMvNTY1MDQ5IiwibmJmIjoxMjYyMzA0MDAwLCJqdGkiOiJodHRwOi8vZXhhbXBsZS5lZHUvY3JlZGVudGlhbHMvMzczMiIsInN1YiI6ImRpZDpleGFtcGxlOmViZmViMWY3MTJlYmM2ZjFjMjc2ZTEyZWMyMSJ9.z5vgMTK1nfizNCg5N-niCOL3WUIAL7nXy-nGhDZYO_-PNGeE-0djCpWAMH8fD8eWSID5PfkPBYkx_dfLJnQ7NA
 ```
 
@@ -201,15 +228,15 @@ The OpenID4VCI spec defines a server metadata object that contains information a
 support. Next to this predefined endpoint there are also the well-known locations for OpenID Connect Discovery
 configuration and
 Oauth2 Authorization Server configuration. These contain for instance the token endpoints.
-The MetadataClientV1_0_13 checks the OpenID4VCI well-known location for the medata and existence of a token endpoint. If the
+The MetadataClientV1_0_15 checks the OpenID4VCI well-known location for the medata and existence of a token endpoint. If the
 OpenID4VCI well-known location is not found, the OIDC/OAuth2 well-known locations will be tried:
 
 Example:
 
 ```typescript
-import { MetadataClientV1_0_13 } from '@sphereon/oid4vci-client';
+import { MetadataClientV1_0_15 } from '@sphereon/oid4vci-client';
 
-const metadata = await MetadataClientV1_0_13.retrieveAllMetadataFromCredentialOffer(initiationRequestWithUrl);
+const metadata = await MetadataClientV1_0_15.retrieveAllMetadataFromCredentialOffer(initiationRequestWithUrl);
 
 console.log(metadata);
 /**
@@ -219,7 +246,7 @@ console.log(metadata);
  *  token_endpoint: 'https://server.example.com/token',
  *  jwks_uri: 'https://server.example.com/jwks',
  *  grant_types_supported: ['urn:ietf:params:oauth:grant-type:pre-authorized_code'],
- *  credentials_supported: {
+ *  credential_configurations_supported: {
  *   OpenBadgeCredential: {
  *     formats: {
  *       jwt_vc: {
@@ -274,6 +301,30 @@ console.log(accessTokenResponse);
  * }
  */
 ```
+
+## New in v1.0.15: credential_identifier
+
+In OID4VCI v1.0.15, the Token Response may include `authorization_details` with `credential_identifiers`. When present, these identifiers must be used in the Credential Request instead of `credential_configuration_id`:
+```typescript
+// If authorization_details with credential_identifiers was returned:
+const credentialResponse = await client.acquireCredentials({
+  credential_identifier: 'CivilEngineeringDegree-2023', // From Token Response
+  proofCallbacks: callbacks,
+  format: 'jwt_vc_json',
+  alg: Alg.ES256K,
+  kid: 'did:example:ebfeb1f712ebc6f1c276e12ec21#keys-1',
+});
+
+// Otherwise, use credential_configuration_id:
+const credentialResponse = await client.acquireCredentials({
+  credential_configuration_id: 'UniversityDegreeCredential',
+  proofCallbacks: callbacks,
+  format: 'jwt_vc_json',
+  alg: Alg.ES256K,
+  kid: 'did:example:ebfeb1f712ebc6f1c276e12ec21#keys-1',
+});
+```
+
 
 # Proof of Possession
 
@@ -390,8 +441,9 @@ console.log(proofInput);
 
 ### Using the builder with a self-created JWT
 
-You can build/create a JWT yourself. You would still use the callbacks to sign the JWT. Please be aware that you will
-have to use the `c_nonce` value from the Access Token response as `nonce` value!. You can provide another nonce using
+You can build/create a JWT yourself. You would still use the callbacks to sign the JWT.
+Obtain a fresh c_nonce from the Nonce Endpoint before building the proof (see Nonce Endpoint section).
+The c_nonce MUST be included in the proof as the `nonce` value. You can provide another nonce using
 the `jti` property.
 
 ```typescript
@@ -438,10 +490,49 @@ const credentialResponse: CredentialResponse = await credentialRequestClient.acq
   format: 'jwt_vc', // Allows us to override the format
 });
 
-// Or in 2 steps:
-// const credentialRequest: CredentialRequest = await credentialRequestClient.createCredentialRequest(proofOpts, { format: 'jwt_vc' }) // Allows us to override the format
+// Or in 2 steps using credential_configuration_id:
+// const credentialRequest: CredentialRequest = await credentialRequestClient.createCredentialRequest(proofOpts, { credential_configuration_id: 'OpenBadgeCredential' })
 // const credentialResponse: CredentialResponse = await credentialRequestClient.acquireCredentialsUsingRequest(credentialRequest)
 ```
+
+## Nonce Endpoint (v1.0.15)
+
+Version 1.0.15 introduces a dedicated **Nonce Endpoint** for obtaining fresh `c_nonce` values without requiring an access token. This is a significant change from previous versions where `c_nonce` was returned in the Token Response.
+
+### Why the Nonce Endpoint?
+
+The Nonce Endpoint allows wallets to:
+- Obtain a nonce before making proof-of-possession
+- Refresh nonces without making a full credential request
+- Support better replay attack prevention
+
+### Usage
+```typescript
+// Retrieve a nonce from the Nonce Endpoint (requires no authentication)
+const nonceResponse = await client.retrieveNonce();
+console.log(nonceResponse);
+/**
+ * {
+ *   c_nonce: 'wKI4LT17ac15ES9bw8ac4'
+ * }
+ * Note: c_nonce_expires_in was removed in v15
+ */
+
+// Use this nonce when building your proof for the Credential Request
+const proofInput = await ProofOfPossessionBuilder.fromJwt({
+  jwt: {
+    header: { alg: Alg.ES256, kid: 'did:example:123#key-1', typ: 'openid4vci-proof+jwt' },
+    payload: {
+      iss: clientId,
+      aud: issuerIdentifier,
+      iat: Math.floor(Date.now() / 1000),
+      nonce: nonceResponse.c_nonce // Use the nonce from Nonce Endpoint
+    }
+  },
+  callbacks
+}).build();
+```
+
 
 # Helper Functions
 
@@ -457,7 +548,7 @@ import { convertJsonToURI } from '@sphereon/oid4vci-client';
 const encodedURI = convertJsonToURI(
   {
     issuer: 'https://server.example.com',
-    credential_type: ['https://did.example.org/healthCard', 'https://did.example1.org/driverLicense'],
+    credential_configuration_ids: ['UniversityDegree', 'DriverLicense'],
     op_state: 'eyJhbGciOiJSU0Et...FYUaBy',
   },
   {
@@ -497,15 +588,19 @@ console.log(decodedJson);
 ```typescript
 const CREDENTIAL_OFFER_URI =
   'openid-credential-offer://?' +
-  'credential_offer=%7B%22credential_issuer%22:%22https://credential-issuer.example.com%22,%22credentials%22:%5B%7B%22format%22:%22jwt_vc_json%22,%22types%22:%5B%22VerifiableCredential%22,%22UniversityDegreeCredential%22%5D%7D%5D,%22issuer_state%22:%22eyJhbGciOiJSU0Et...FYUaBy%22%7D';
+  'credential_offer=%7B%22credential_issuer%22:%22https://credential-issuer.example.com%22,%22credential_configuration_ids%22:%5B%22UniversityDegreeCredential%22%5D,%22grants%22:%7B%22urn:ietf:params:oauth:grant-type:pre-authorized_code%22:%7B%22pre-authorized_code%22:%22oaKazRN8I0IbtZ0C7JuMn5%22%7D%7D%7D';
 
 const openId4VCIVersion = determineSpecVersionFromURI(CREDENTIAL_OFFER_URI);
 console.log(openId4VCIVersion);
 
 /**
- * 11
+ * 15 or higher
  */
 ```
+
+**Note**: The `openid-credential-offer://` scheme is the correct scheme for v1.0-15. Legacy schemes like `openid-initiate-issuance://` with `credential_type` parameters indicate pre-v15 specifications.
+
+
 
 
 

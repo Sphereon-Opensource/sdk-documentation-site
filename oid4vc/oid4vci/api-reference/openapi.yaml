@@ -1,7 +1,7 @@
 openapi: 3.0.0
 info:
   title: Sphereon OID4VCI API
-  version: 0.1.1
+  version: 1.0.15
   description: |
     API for OpenID for Verifiable Credential Issuance
     This API allows issuers to provide verifiable credentials to wallets following the OID4VCI specification.
@@ -38,31 +38,27 @@ components:
       description: Response containing the issued credential
       type: object
       properties:
-        credential:
-          oneOf:
-            - type: string
-            - type: object
-          description: 'The issued credential, either as a JWT string or JSON object'
-          example: eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCJ9...
-        format:
+        credentials:
+          type: array
+          description: Array of issued credentials. MUST NOT be present if transaction_id is present.
+          items:
+            type: object
+            properties:
+              credential:
+                oneOf:
+                  - type: string
+                  - type: object
+                description: The issued credential
+          example:
+            - credential: "eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCJ9..."
+        transaction_id:
           type: string
-          enum:
-            - jwt_vc_json
-            - jwt_vc
-            - ldp_vc
-            - jwt_vc_json-ld
-            - dc+sd-jwt
-            - mso_mdoc
-          description: Format of the issued credential
-          example: jwt_vc_json
-        c_nonce:
+          description: Identifier for deferred issuance. MUST NOT be present if credentials is present.
+          example: txn-12345
+        notification_id:
           type: string
-          description: Nonce for subsequent credential requests
-          example: b326c4ab-16f1-4304-83e1-4637f8fe4207
-        c_nonce_expires_in:
-          type: number
-          description: Expiration time of the c_nonce in seconds
-          example: 300
+          description: Identifier for notification requests
+          example: notif-67890
     IssueStatusResponse:
       type: object
       description: Status of a credential issuance request
@@ -171,6 +167,7 @@ components:
       type: object
       required:
         - access_token
+        - token_type
       properties:
         access_token:
           type: string
@@ -188,14 +185,6 @@ components:
           type: number
           description: The duration in seconds for which the token is valid
           example: 3600
-        c_nonce:
-          type: string
-          description: A nonce to be used in credential requests
-          example: b326c4ab-16f1-4304-83e1-4637f8fe4207
-        c_nonce_expires_in:
-          type: number
-          description: Expiration time of the c_nonce in seconds
-          example: 300
         authorization_pending:
           type: boolean
           description: Indicates if authorization is still pending
@@ -204,6 +193,11 @@ components:
           type: number
           description: The recommended polling interval in seconds
           example: 5
+        authorization_details:
+          type: array
+          description: Authorization details with credential identifiers (v1.0.15)
+          items:
+            $ref: '#/components/schemas/AuthorizationDetails'
     NotificationRequest:
       type: object
       description: Request payload for sending a notification event
@@ -224,47 +218,27 @@ components:
           example: notif-12345
     CredentialRequest:
       type: object
-      description: Request to issue a credential according to OID4VCI v1.0.13 specification
-      required:
-        - format
+      description: |
+        Request to issue a credential according to OID4VCI v1.0.15 specification.
+        Exactly one of credential_identifier or credential_configuration_id MUST be present.
       properties:
-        format:
-          type: string
-          description: Format of the requested credential
-          enum:
-            - jwt_vc_json
-            - jwt_vc
-            - ldp_vc
-            - jwt_vc_json-ld
-            - dc+sd-jwt
-            - mso_mdoc
-          example: jwt_vc_json
         credential_identifier:
           type: string
-          description: Identifier of the credential configuration to be issued
+          description: REQUIRED when authorization_details was returned from Token Response. Identifies a Credential Dataset for issuance. MUST NOT be present with credential_configuration_id.
+          example: credential-dataset-123
+        credential_configuration_id:
+          type: string
+          description: REQUIRED if credential_identifier was not returned. String identifying a key in credential_configurations_supported. MUST NOT be present with credential_identifier.
           example: UniversityDegree_JWT
         proof:
           $ref: '#/components/schemas/ProofOfPossession'
+        proofs:
+          $ref: '#/components/schemas/ProofOfPossessionArray'
         credential_response_encryption:
-          type: object
-          description: Parameters for response encryption
-          properties:
-            jwk:
-              type: object
-              description: JWK for encryption
-              example:
-                kty: EC
-                crv: P-256
-                x: ...
-                'y': ...
-            alg:
-              type: string
-              description: Algorithm for encryption
-              example: ES256
-            enc:
-              type: string
-              description: Content encryption algorithm
-              example: A256GCM
+          $ref: '#/components/schemas/CredentialResponseEncryption'
+        issuer_state:
+          type: string
+          description: OPTIONAL. Issuer state for external AS integration without nonces
     ProofOfPossession:
       type: object
       description: Proof of possession structure for credential requests
@@ -282,6 +256,18 @@ components:
           type: string
           description: A signed JWT containing the proof of possession
           example: eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCJ9...
+    ProofOfPossessionArray:
+      type: object
+      description: Object containing arrays of proofs for batch credential issuance
+      properties:
+        jwt:
+          type: array
+          items:
+            type: string
+            description: JWT proof
+          example:
+            - "eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCJ9..."
+            - "eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCJ9..."
     CredentialOfferPayload:
       type: object
       description: Core credential offer data
@@ -315,7 +301,13 @@ components:
       description: The issue status part of the issuance session
       type: string
       enum:
-        - OFFER_CREATED ACCESS_TOKEN_REQUESTED ACCESS_TOKEN_CREATED CREDENTIAL_REQUEST_RECEIVED CREDENTIAL_ISSUED NOTIFICATION_CREDENTIAL_ACCEPTED NOTIFICATION_CREDENTIAL_DELETED NOTIFICATION_CREDENTIAL_FAILURE ERROR
+        - OFFER_CREATED ACCESS_TOKEN_REQUESTED
+        - ACCESS_TOKEN_CREATED
+        - CREDENTIAL_REQUEST_RECEIVED
+        - CREDENTIAL_ISSUED
+        - NOTIFICATION_CREDENTIAL_ACCEPTED
+        - NOTIFICATION_CREDENTIAL_DELETED
+        - NOTIFICATION_CREDENTIAL_FAILURE ERROR
     GrantAuthorizationCode:
       type: object
       properties:
@@ -396,19 +388,28 @@ components:
         - credential_issuer
         - credential_endpoint
       properties:
-        credential_configurations_supported:
-          type: object
-          description: Map of supported credential configurations
-          additionalProperties:
-            $ref: '#/components/schemas/CredentialConfigurationSupported'
         credential_issuer:
           type: string
           description: URL identifying the credential issuer
           example: 'https://issuer.example.com'
+        credential_configurations_supported:
+          type: object
+          description: Map of credential configuration IDs to their definitions
+          additionalProperties:
+            $ref: '#/components/schemas/CredentialConfigurationSupported'
         credential_endpoint:
           type: string
-          description: URL of the credential endpoint
           example: 'https://issuer.example.com/credentials'
+        token_endpoint:
+          type: string
+          description: URL of the token endpoint
+        authorization_challenge_endpoint:
+          type: string
+          description: URL of the Authorization Challenge Endpoint
+        nonce_endpoint:
+          type: string
+          description: NEW in v1.0.15. URL of nonce endpoint
+          example: 'https://issuer.example.com/nonce'
         authorization_servers:
           type: array
           items:
@@ -417,14 +418,18 @@ components:
           type: string
         notification_endpoint:
           type: string
-        token_endpoint:
-          type: string
+        batch_credential_issuance:
+          $ref: '#/components/schemas/BatchCredentialIssuance'
+        credential_response_encryption:
+          $ref: '#/components/schemas/ResponseEncryption'
+        credential_identifiers_supported:
+          type: boolean
+          description: Whether credential_identifiers in Token Response is supported
         display:
           type: array
           items:
             $ref: '#/components/schemas/MetadataDisplay'
-        authorization_challenge_endpoint:
-          type: string
+          description: Display properties for different languages
     CredentialConfigurationSupported:
       type: object
       description: Defines the supported configurations for issuing credentials
@@ -456,6 +461,16 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/CredentialsSupportedDisplay'
+    BatchCredentialIssuance:
+      type: object
+      description: Batch issuance support information
+      required:
+        - batch_size
+      properties:
+        batch_size:
+          type: integer
+          description: Maximum array size for proofs parameter
+          example: 5
     MetadataDisplay:
       type: object
       description: Display metadata for a credential or issuer
@@ -508,6 +523,435 @@ components:
         text_color:
           type: string
           description: Text color for the credential display
+    AuthorizationDetails:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          enum:
+            - openid_credential
+        credential_configuration_id:
+          type: string
+        credential_identifiers:
+          type: array
+          description: Array of credential identifiers that can be issued
+          items:
+            type: string
+        locations:
+          type: array
+          items:
+            type: string
+    AuthorizationServerMetadata:
+      type: object
+      description: OAuth 2.0 Authorization Server metadata with OID4VCI v1.0.15 extensions
+      required:
+        - issuer
+        - response_types_supported
+      properties:
+        # Core OAuth 2.0 Authorization Server Metadata (RFC 8414)
+        issuer:
+          type: string
+          description: Authorization server's identifier URL
+          example: 'https://auth.example.com'
+
+        authorization_endpoint:
+          type: string
+          description: URL of the authorization endpoint
+          example: 'https://auth.example.com/authorize'
+
+        token_endpoint:
+          type: string
+          description: URL of the token endpoint
+          example: 'https://auth.example.com/token'
+
+        jwks_uri:
+          type: string
+          description: URL of the JSON Web Key Set document
+          example: 'https://auth.example.com/.well-known/jwks.json'
+
+        registration_endpoint:
+          type: string
+          description: URL of the dynamic client registration endpoint
+          example: 'https://auth.example.com/register'
+
+        scopes_supported:
+          type: array
+          description: List of OAuth 2.0 scope values supported
+          items:
+            type: string
+          example: ['openid', 'profile', 'email']
+
+        response_types_supported:
+          type: array
+          description: List of OAuth 2.0 response_type values supported
+          items:
+            type: string
+            enum:
+              - code
+              - token
+              - id_token
+              - 'code token'
+              - 'code id_token'
+              - 'token id_token'
+              - 'code token id_token'
+          example: ['code']
+
+        response_modes_supported:
+          type: array
+          description: List of OAuth 2.0 response_mode values supported
+          items:
+            type: string
+            enum:
+              - query
+              - fragment
+              - form_post
+          example: ['query', 'fragment']
+
+        grant_types_supported:
+          type: array
+          description: List of OAuth 2.0 grant type values supported
+          items:
+            type: string
+          example:
+            - authorization_code
+            - 'urn:ietf:params:oauth:grant-type:pre-authorized_code'
+            - refresh_token
+
+        token_endpoint_auth_methods_supported:
+          type: array
+          description: List of client authentication methods supported by token endpoint
+          items:
+            type: string
+            enum:
+              - client_secret_basic
+              - client_secret_post
+              - client_secret_jwt
+              - private_key_jwt
+              - none
+          example: ['client_secret_basic', 'private_key_jwt']
+
+        token_endpoint_auth_signing_alg_values_supported:
+          type: array
+          description: List of JWS signing algorithms supported for client authentication
+          items:
+            type: string
+          example: ['RS256', 'ES256', 'PS256']
+
+        service_documentation:
+          type: string
+          description: URL of human-readable service documentation
+          example: 'https://auth.example.com/docs'
+
+        ui_locales_supported:
+          type: array
+          description: List of UI locales supported
+          items:
+            type: string
+          example: ['en-US', 'fr-FR', 'de-DE']
+
+        op_policy_uri:
+          type: string
+          description: URL of the authorization server's policy document
+          example: 'https://auth.example.com/policy'
+
+        op_tos_uri:
+          type: string
+          description: URL of the authorization server's terms of service
+          example: 'https://auth.example.com/tos'
+
+        revocation_endpoint:
+          type: string
+          description: URL of the token revocation endpoint
+          example: 'https://auth.example.com/revoke'
+
+        revocation_endpoint_auth_methods_supported:
+          type: array
+          description: List of client authentication methods supported by revocation endpoint
+          items:
+            type: string
+            enum:
+              - client_secret_basic
+              - client_secret_post
+              - client_secret_jwt
+              - private_key_jwt
+              - none
+
+        revocation_endpoint_auth_signing_alg_values_supported:
+          type: array
+          description: List of JWS signing algorithms for revocation endpoint authentication
+          items:
+            type: string
+          example: ['RS256', 'ES256']
+
+        introspection_endpoint:
+          type: string
+          description: URL of the token introspection endpoint
+          example: 'https://auth.example.com/introspect'
+
+        introspection_endpoint_auth_methods_supported:
+          type: array
+          description: List of client authentication methods supported by introspection endpoint
+          items:
+            type: string
+            enum:
+              - client_secret_basic
+              - client_secret_post
+              - client_secret_jwt
+              - private_key_jwt
+              - none
+
+        introspection_endpoint_auth_signing_alg_values_supported:
+          type: array
+          description: List of JWS signing algorithms for introspection endpoint authentication
+          items:
+            type: string
+          example: ['RS256', 'ES256']
+
+        code_challenge_methods_supported:
+          type: array
+          description: List of PKCE code challenge methods supported
+          items:
+            type: string
+            enum:
+              - plain
+              - S256
+          example: ['S256']
+
+        # Pushed Authorization Request (PAR) - RFC 9126
+        pushed_authorization_request_endpoint:
+          type: string
+          description: URL of the pushed authorization request endpoint
+          example: 'https://auth.example.com/par'
+
+        require_pushed_authorization_requests:
+          type: boolean
+          description: Whether PAR is required for authorization requests
+          default: false
+          example: false
+
+        # DPoP - RFC 9449
+        dpop_signing_alg_values_supported:
+          type: array
+          description: List of JWS algorithms supported for DPoP proof JWTs
+          items:
+            type: string
+          example: ['ES256', 'ES384', 'ES512', 'EdDSA']
+
+        # OpenID Connect (if applicable)
+        userinfo_endpoint:
+          type: string
+          description: URL of the UserInfo endpoint
+          example: 'https://auth.example.com/userinfo'
+
+        check_session_iframe:
+          type: string
+          description: URL of an OP iframe for session management
+          example: 'https://auth.example.com/check_session'
+
+        end_session_endpoint:
+          type: string
+          description: URL of the end session endpoint
+          example: 'https://auth.example.com/logout'
+
+        acr_values_supported:
+          type: array
+          description: List of Authentication Context Class References supported
+          items:
+            type: string
+          example: ['urn:mace:incommon:iap:silver', 'urn:mace:incommon:iap:bronze']
+
+        subject_types_supported:
+          type: array
+          description: List of Subject Identifier types supported
+          items:
+            type: string
+            enum:
+              - public
+              - pairwise
+          example: ['public']
+
+        id_token_signing_alg_values_supported:
+          type: array
+          description: List of JWS algorithms supported for ID Token signing
+          items:
+            type: string
+          example: ['RS256', 'ES256', 'EdDSA']
+
+        id_token_encryption_alg_values_supported:
+          type: array
+          description: List of JWE algorithms supported for ID Token encryption
+          items:
+            type: string
+          example: ['RSA-OAEP', 'ECDH-ES']
+
+        id_token_encryption_enc_values_supported:
+          type: array
+          description: List of JWE encryption methods supported for ID Token
+          items:
+            type: string
+          example: ['A256GCM', 'A128GCM']
+
+        request_object_signing_alg_values_supported:
+          type: array
+          description: List of JWS algorithms supported for request objects
+          items:
+            type: string
+          example: ['RS256', 'ES256', 'none']
+
+        request_object_encryption_alg_values_supported:
+          type: array
+          description: List of JWE algorithms supported for request object encryption
+          items:
+            type: string
+          example: ['RSA-OAEP', 'ECDH-ES']
+
+        request_object_encryption_enc_values_supported:
+          type: array
+          description: List of JWE encryption methods supported for request objects
+          items:
+            type: string
+          example: ['A256GCM', 'A128GCM']
+
+        display_values_supported:
+          type: array
+          description: List of display parameter values supported
+          items:
+            type: string
+            enum:
+              - page
+              - popup
+              - touch
+              - wap
+          example: ['page', 'popup']
+
+        claim_types_supported:
+          type: array
+          description: List of claim types supported
+          items:
+            type: string
+            enum:
+              - normal
+              - aggregated
+              - distributed
+          default: ['normal']
+
+        claims_supported:
+          type: array
+          description: List of claim names supported
+          items:
+            type: string
+          example: ['sub', 'iss', 'name', 'email', 'email_verified']
+
+        claims_parameter_supported:
+          type: boolean
+          description: Whether the claims parameter is supported
+          default: false
+
+        request_parameter_supported:
+          type: boolean
+          description: Whether the request parameter is supported
+          default: false
+
+        request_uri_parameter_supported:
+          type: boolean
+          description: Whether the request_uri parameter is supported
+          default: true
+
+        require_request_uri_registration:
+          type: boolean
+          description: Whether request_uri values must be pre-registered
+          default: false
+
+        frontchannel_logout_supported:
+          type: boolean
+          description: Whether front-channel logout is supported
+          default: false
+
+        frontchannel_logout_session_supported:
+          type: boolean
+          description: Whether front-channel logout can include session information
+          default: false
+
+        backchannel_logout_supported:
+          type: boolean
+          description: Whether back-channel logout is supported
+          default: false
+
+        backchannel_logout_session_supported:
+          type: boolean
+          description: Whether back-channel logout can include session information
+          default: false
+
+        # OID4VCI v1.0.15 Extensions
+        pre-authorized_grant_anonymous_access_supported:
+          type: boolean
+          description: |
+            OPTIONAL. Boolean indicating whether the Credential Issuer accepts a Token Request 
+            with a Pre-Authorized Code but without a client_id. The default is false.
+          default: false
+          example: true
+
+        authorization_challenge_endpoint:
+          type: string
+          description: URL of the authorization challenge endpoint (first-party apps)
+          example: 'https://auth.example.com/authorization-challenge'
+
+        # OID4VCI credential endpoints (if AS is also the issuer)
+        credential_endpoint:
+          type: string
+          description: URL of the credential endpoint (if AS also acts as credential issuer)
+          example: 'https://auth.example.com/credentials'
+
+        deferred_credential_endpoint:
+          type: string
+          description: URL of the deferred credential endpoint
+          example: 'https://auth.example.com/deferred-credentials'
+
+        nonce_endpoint:
+          type: string
+          description: URL of the nonce endpoint (OID4VCI v1.0.15)
+          example: 'https://auth.example.com/nonce'
+    ResponseEncryption:
+      type: object
+      required:
+        - alg_values_supported
+        - enc_values_supported
+        - encryption_required
+      properties:
+        alg_values_supported:
+          type: array
+          items:
+            type: string
+          example: ["ECDH-ES", "ECDH-ES+A256KW"]
+        enc_values_supported:
+          type: array
+          items:
+            type: string
+          example: ["A256GCM", "A128GCM"]
+        encryption_required:
+          type: boolean
+          description: Whether encryption is mandatory
+    CredentialResponseEncryption:
+      type: object
+      description: Encryption parameters for credential response
+      required:
+        - jwk
+        - alg
+        - enc
+      properties:
+        jwk:
+          type: object
+          description: JWK for encryption
+        alg:
+          type: string
+          description: JWE algorithm
+          example: ECDH-ES
+        enc:
+          type: string
+          description: Content encryption algorithm
+          example: A256GCM
 paths:
   /webapp/credential-offers:
     post:
@@ -685,7 +1129,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
+                $ref: '#/components/schemas/AuthorizationServerMetadata'
   /authorization-challenge:
     post:
       summary: Authorization challenge endpoint in case a first party flow is enabled with the integrated authorization server
@@ -769,6 +1213,36 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+  /nonce:
+    post:
+      summary: Nonce endpoint
+      description: Obtain a fresh c_nonce value for proof of possession
+      operationId: get-nonce
+      tags:
+        - Wallet
+      security: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              description: Empty request body
+      responses:
+        '200':
+          description: Successful response with fresh nonce
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - c_nonce
+                properties:
+                  c_nonce:
+                    type: string
+                    description: Fresh nonce value
+                    example: b326c4ab-16f1-4304-83e1-4637f8fe4207
+
 servers:
   - description: Example issuer
     url: 'https://agent.findynet.demo.sphereon.com/oid4vci'

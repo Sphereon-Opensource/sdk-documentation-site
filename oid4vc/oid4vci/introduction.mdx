@@ -16,13 +16,13 @@ The Sphereon issuer supports all concepts described below
 
 ## Credential Offers
 
-In the OID4VCI Specification (Draft 13), a **Credential Offer** is a mechanism through which an issuer initiates the process of issuing Digital Credentials to a wallet or agent.
+In the OID4VCI Specification (Draft 15), a **Credential Offer** is a mechanism through which an issuer initiates the process of issuing Digital Credentials to a wallet or agent.
 This offer could be delivered either **by value** or **by reference**, depending on the use case and desired communication flow between parties. There are tradeoffs between both
 modes.
 
 ### Credential Offer by Value
 
-In a **by value** approach, the entire credential offer is contained directly within the message received by the wallet. This means the issuer provides all the necessary
+In a **by value** approach, the entire credential offer is contained directly within the message received by the wallet using the `credential_offer` parameter. This means the issuer provides all the necessary
 information for retrieving the credential within the same payload—typically in a direct communication, like embedding the offer in a QR code, a deep link, or another transport
 layer. The benefit is that the wallet does not have to access a network resource, which potentially could be an attack vector. Normally another benefit would be that you could use
 it offline as well, but since the OID4VCI specification needs multiple interactions after this step, that benefit is nearly non-existent (there are some use cases imaginable, like
@@ -41,11 +41,12 @@ only having access to an IDP at this point and getting the credential itself lat
 
 ### Credential Offer by Reference
 
-In a **by reference** approach, the credential offer is represented by a URL pointing to the complete offer that resides on the issuer's server. The wallet
+In a **by reference** approach, the credential offer is represented by a URL using the `credential_offer_uri` parameter that points to the complete offer that resides on the issuer's server. The wallet
 or agent retrieves the offer data from this reference.
 Although credential offers especially when shown as a QR code are subject to potential hijacking anyway, having URLs makes that more prominent/easy. That
 is why the URLs should have a lot of entropy/randomness and should also not expose real session data/identifier used later in the protocol. That is also the reason why Sphereon
 uses correlationIds. These are only used in the step between link/QR code and the offer URL. After that different session values and nonces are used in the protocol.
+
 
 #### Advantages:
 
@@ -59,18 +60,17 @@ uses correlationIds. These are only used in the step between link/QR code and th
 - **Far-fetched**: An issuer can track the offer (session) to an IP address of the wallet. This is not a realy good argument, since the issuer will be able to do that later in the
   flow as well in most cases.
 
-### Configuration IDs and Credential Offers
+### Credential Configuration IDs and Credential Offers
 
-The specification also supports the use of **configuration_ids** to identify specific credential configurations. These identifiers allow issuers to dynamically tailor the offer
-based on predefined configurations stored on the server. For example:
+The specification uses **credential_configuration_ids** to identify specific credential configurations offered by the issuer. These identifiers allow issuers to dynamically tailor the offer
+based on predefined configurations stored in the `credential_configurations_supported` parameter of the server's metadata. For example:
 
-- A specific **configuration_id** could define the types of credentials available for issuance, any associated policies, or further metadata about the offer.
+- A specific **credential_configuration_id** identifies one of the keys in the `credential_configurations_supported` Credential Issuer metadata, which defines the types of credentials available for issuance, supported formats, cryptographic binding methods, and display properties.
 
 When issuing credentials:
 
-- A **by value** offer could directly embed a `configuration_id` to pass this data upfront.
-- A **by reference** offer might use the configuration ID as part of the retrieval process, allowing the wallet to resolve the referenced configuration dynamically.
-
+- A **by value** offer directly embeds the `credential_configuration_ids` array to indicate which credentials are being offered.
+- A **by reference** offer retrieves the credential offer from a URL, which then contains the `credential_configuration_ids` for the wallet to process.
 ---
 
 ## Supported Grants in OID4VCI
@@ -100,6 +100,8 @@ something like a credential catalogue, where the user would be able to select to
 3. An authorization code is returned to the wallet.
 4. The wallet uses this code to request an access token from the token endpoint.
 5. The access token is used to retrieve the credential from the credential endpoint.
+6. When cryptographic binding is required, the wallet may need to obtain a `c_nonce` value for proof of possession. The wallet can receive a `c_nonce` from the Token Response, from error responses at the Credential Endpoint, or by calling the optional Nonce Endpoint to get a fresh nonce value.
+
 
 #### Benefits:
 
@@ -119,9 +121,10 @@ protected
 
 #### Flow Overview:
 
-* The issuer generates a **pre-authorized_code** and shares it with the wallet (e.g., via QR code or deep link).
+* The issuer generates a **pre-authorized_code** (using grant type `urn:ietf:params:oauth:grant-type:pre-authorized_code`) and shares it with the wallet (e.g., via QR code or deep link).
 * The wallet uses the pre-authorized code directly to retrieve the access token from the token endpoint.
 * The access token is used to fetch the credential from the credential endpoint.
+* To prevent replay attacks, a **Transaction Code** (tx_code) should be used, especially in cross-device scenarios. The Transaction Code is sent to the end-user via a separate channel (e.g., SMS, email) and must be entered by the user and sent by the wallet in the Token Request.
 
 ![Flow diagram](https://www.plantuml.com/plantuml/proxy?cache=no&src=https://raw.githubusercontent.com/Sphereon-Opensource/OID4VCI-client/develop/docs/preauthorized-code-flow.puml)
 
@@ -143,4 +146,4 @@ The OID4VCI specification provides a secure and flexible framework for issuing V
 by reference). The choice of flow and offer method depends on the desired trade-offs between simplicity, security, and dynamic flexibility in the credential issuance process.
 
 For further details and diagrams explaining specific processes, refer to the
-full [OID4VCI Draft 13 specification](https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0-13.html).
+full [OID4VCI Draft 15 specification](https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0-15.html).

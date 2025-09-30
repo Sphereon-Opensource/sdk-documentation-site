@@ -6,7 +6,7 @@ The CredentialOfferState is used to track of the creation date of the credential
 
 ```typescript
 export interface CredentialOfferState {
-  credentialOffer: CredentialOfferPayloadV1_0_13
+  credentialOffer: CredentialOfferPayloadV1_0_15
   createdOn: number
 }
 ```
@@ -83,7 +83,20 @@ const vcIssuer = new VcIssuerBuilder()
     name: 'example issuer',
     locale: 'en-US',
   })
-  .withCredentialsSupported(credentialsSupported)
+  .withCredentialConfigurationsSupported(credentialConfigurationsSupported)
   .withInMemoryCredentialOfferStates(new MemoryCredentialOfferStateManager())
   .build()
 ```
+
+### Multi-Authorization Server Support
+
+In v1.0-15, Credential Issuers can work with multiple Authorization Servers. When building your issuer configuration:
+```typescript
+const vcIssuer = new VcIssuerBuilder()
+  .withAuthorizationServers(['https://as1.example.com', 'https://as2.example.com']) // Array of AS identifiers
+  .withCredentialEndpoint('https://credential-endpoint')
+  .withCredentialIssuer('https://credential-issuer')
+  // ... rest of configuration
+  .build()
+```
+
