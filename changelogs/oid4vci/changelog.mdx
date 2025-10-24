@@ -8,6 +8,158 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 </Note>
 
 
+# [0.19.1](https://github.com/Sphereon-Opensource/OID4VCI/compare/v0.18.0...v0.19.1) (2025-09-30)
+
+## ⚠ BREAKING CHANGES
+
+### Migration to OID4VCI Draft 15
+
+This release implements OID4VCI draft 15 specification. This version includes several breaking changes from draft 13:
+
+**1. Credential Offer Structure**
+- **URI Scheme**: Changed from `openid-initiate-issuance://` to `openid-credential-offer://`
+- **Credential Identification**: `credentials` array replaced with `credential_configuration_ids` array
+- **Before**: `"credentials": [{"format": "jwt_vc_json", "types": [...]}]`
+- **After**: `"credential_configuration_ids": ["UniversityDegreeCredential"]`
+- **Migration**: Update all credential offer generation code and URI parsing logic to use the new scheme and parameter names
+
+---
+
+**2. Transaction Code (formerly User PIN)**
+- **Structure Change**: `user_pin_required: boolean` replaced with structured `tx_code` object
+- **Before**: `"user_pin_required": true`
+- **After**: `"tx_code": {"input_mode": "numeric", "length": 4, "description": "Please enter the PIN sent to your email"}`
+- **New Properties**:
+  - `input_mode`: Either "numeric" or "text"
+  - `length`: Integer specifying the expected code length
+  - `description`: Optional string for user guidance
+- **Migration**: Update credential offer generation to use tx_code object structure and update wallet PIN handling logic to parse the new format
+
+---
+
+**3. Claims Path Pointers**
+- **Structure Change**: Claims now use array-based path pointers instead of dotted string notation
+- **Before**: `"address.country"`, `"person.age"`
+- **After**: `["address", "country"]`, `["person", "age"]`
+- **Applies To**: SD-JWT and ISO mDL credential formats
+- **Array Elements**:
+  - String values indicate object keys to select
+  - `null` values indicate all elements of an array
+  - Non-negative integers indicate specific array indices
+- **ISO mDL Specific**: Claims path pointers contain exactly two string elements: namespace and data element identifier
+- **Migration**: Update all claims definitions in `credential_configurations_supported` metadata to use array format
+
+---
+
+**4. Nonce Endpoint**
+- **New Endpoint**: Dedicated endpoint for retrieving `c_nonce` values
+- **Location**: Indicated by `nonce_endpoint` parameter in Credential Issuer metadata
+- **Authentication**: Unprotected endpoint (no access token required)
+- **Token Response Change**: `c_nonce` and `c_nonce_expires_in` fields REMOVED from Token Response
+- **Purpose**: Allows wallets to obtain fresh nonces for proof-of-possession without requiring access tokens
+- **Migration**:
+  - Implement Nonce Endpoint on issuer side
+  - Update wallet logic to call Nonce Endpoint before creating proofs
+  - Remove c_nonce from Token Response generation
+  - Do NOT expect c_nonce in Token Response when parsing
+
+---
+
+**5. Credential Request Format**
+- **Proof Structure**: `proof` parameter replaced with `proofs` object containing arrays by proof type
+- **Credential Identification**: Now uses either `credential_identifier` OR `credential_configuration_id` (mutually exclusive)
+- **Format Parameter**: When using `credential_configuration_id` or `credential_identifier`, the `format` parameter MUST NOT be present in the request
+- **Before**: `"proof": {"proof_type": "jwt", "jwt": "..."}`
+- **After**: `"proofs": {"jwt": ["..."]}`
+- **Migration**:
+  - Update credential request construction to use proofs object
+  - Remove format parameter when using credential IDs
+  - Ensure only one of credential_identifier or credential_configuration_id is used
+
+---
+
+**6. Token Response Structure**
+- **Authorization Details**: Now includes `credential_identifiers` array
+- **Identifier Usage**: When `credential_identifiers` is present in authorization_details, wallets MUST use these identifiers in subsequent Credential Requests
+- **Nonce Removal**: `c_nonce` and `c_nonce_expires_in` removed (use Nonce Endpoint instead)
+- **Migration**:
+  - Update token response parsing to extract credential_identifiers
+  - Update credential request flow to use provided identifiers
+  - Remove c_nonce from token response generation
+
+---
+
+**7. Metadata Parameter Naming**
+- **Parameter Rename**: `credentials_supported` renamed to `credential_configurations_supported`
+- **Status**: This is now the REQUIRED parameter in Credential Issuer Metadata
+- **Migration**:
+  - Update issuer builder methods (use `.withCredentialConfigurationsSupported()` instead of `.withCredentialsSupported()`)
+  - Update metadata generation and parsing code
+
+---
+
+**8. SD-JWT Format Identifier**
+- **Format Change**: Format identifier changed from `vc+sd-jwt` to `dc+sd-jwt`
+- **Specification**: Aligns with SD-JWT VC draft-06 specification
+- **Migration**: Update format identifiers in metadata and credential requests to use `dc+sd-jwt`
+
+---
+
+**9. Multi-Authorization Server Support**
+- **New Parameter**: `authorization_servers` array in Credential Issuer Metadata
+- **Validation Requirement**: When Credential Offer includes `authorization_server` parameter, wallets MUST validate it exists in the issuer's `authorization_servers` array
+- **Authorization Details Requirements**:
+  - `locations` parameter MUST contain the Credential Issuer Identifier when using multiple AS
+  - `resource` parameter is RECOMMENDED when using scope parameter
+- **Migration**:
+  - Add authorization server validation logic to wallet
+  - Update metadata generation to include authorization_servers array
+  - Implement proper validation when processing credential offers
+
+---
+
+### Features
+
+- Implement OID4VCI draft 15 specification
+- Add Nonce Endpoint support
+- Add credential_identifiers in authorization flow
+- Add structured tx_code with input modes for better UX
+- Add proofs object supporting multiple proof types
+- Add key attestation JWT format
+- Add wallet attestation for client authentication
+- Add attestation proof type
+- Add support for multi-authorization server configurations
+- Add claims path pointer support with array notation
+
+### Bug Fixes
+
+- Correct handling of credential_identifier vs credential_configuration_id
+- Proper validation of tx_code structure
+- Enhanced nonce freshness validation
+- Improved proof validation for multiple proofs
+- Fixed format parameter handling in credential requests
+
+### Migration Checklist
+
+When upgrading to v1.0-15, ensure you have:
+- [ ] Updated all credential offer URIs to use `openid-credential-offer://` scheme
+- [ ] Replaced `credential_type` with `credential_configuration_ids` in offers
+- [ ] Converted `user_pin_required` to `tx_code` object structure
+- [ ] Updated claims to use array-based path pointers
+- [ ] Implemented Nonce Endpoint (issuers)
+- [ ] Updated wallet to retrieve nonces from Nonce Endpoint (wallets)
+- [ ] Removed c_nonce from Token Response generation (issuers)
+- [ ] Changed `credentials_supported` to `credential_configurations_supported` in metadata
+- [ ] Updated SD-JWT format identifier to `dc+sd-jwt`
+- [ ] Removed format parameter from credential requests using IDs
+- [ ] Added authorization server validation logic (wallets)
+- [ ] Updated builder method calls to use new naming
+
+### Reference
+
+- [OID4VCI v1.0-15 Specification](https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0-15.html)
+- [SD-JWT VC Draft-06](https://www.ietf.org/archive/id/draft-ietf-oauth-sd-jwt-vc-06.html)
+
 # [0.16.0](https://github.com/Sphereon-Opensource/OID4VCI/compare/v0.15.1...v0.16.0) (2024-08-02)
 
 ### Bug Fixes
@@ -98,10 +250,10 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 - (WIP) fixed all the build errors ([e522a3d](https://github.com/Sphereon-Opensource/OID4VCI/commit/e522a3dd5821fb710211e35c8871f89772b672a0))
 - (WIP) refactored and fixed build. still have to fix 33 test cases that are failing ([ff88a64](https://github.com/Sphereon-Opensource/OID4VCI/commit/ff88a647574baa9813939c296342cc112d00237f))
 - (WIP) refactored and fixed build. still have to fix 8 test cases that are failing ([d8c2c4f](https://github.com/Sphereon-Opensource/OID4VCI/commit/d8c2c4fa8d73ea14a0faa823a394cde23733db8f))
-- (WIP) refactored and fixed parts of the logic for v1_0_13. ([06117c0](https://github.com/Sphereon-Opensource/OID4VCI/commit/06117c0fd9a06170284ce5a89075d5b12fcd7d7b))
+- (WIP) refactored and fixed parts of the logic for v1_0_15. ([06117c0](https://github.com/Sphereon-Opensource/OID4VCI/commit/06117c0fd9a06170284ce5a89075d5b12fcd7d7b))
 - (WIP) skipped failing tests and made comment to fix them ([16f1673](https://github.com/Sphereon-Opensource/OID4VCI/commit/16f1673bd30b43ce1b9209650e7b6be5e1f2c237))
 - add back missing authz url getter ([6870fce](https://github.com/Sphereon-Opensource/OID4VCI/commit/6870fcead5921ca1cddef5fb418b8e3a2976e1e4))
-- added back optional vct to CredentialConfigurationSupportedV1_0_13 for sd-jwt ([88341ef](https://github.com/Sphereon-Opensource/OID4VCI/commit/88341ef186c5c2842bf16729ab5c02fae9f22999))
+- added back optional vct to CredentialConfigurationSupportedV1_0_15 for sd-jwt ([88341ef](https://github.com/Sphereon-Opensource/OID4VCI/commit/88341ef186c5c2842bf16729ab5c02fae9f22999))
 - added back the isEbsi function to the new version's OpenID4VCIClient ([479bea7](https://github.com/Sphereon-Opensource/OID4VCI/commit/479bea791e2d82a1e564e08a569f4caf205e1cc1))
 - added generic union types for frequently used types ([72474d6](https://github.com/Sphereon-Opensource/OID4VCI/commit/72474d6b95d58914d31ee36875feace8f0432942))
 - added generic union types for frequently used types ([f10d0b2](https://github.com/Sphereon-Opensource/OID4VCI/commit/f10d0b22c4a1c4f6d57fe21d5a7d659f35a3fc27))
@@ -139,7 +291,7 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 - added setDefaultTokenEndpoint to VcIssuer constructor ([f16affc](https://github.com/Sphereon-Opensource/OID4VCI/commit/f16affc7a77847e24443930b0dd8f87f5533b61a))
 - added setDefaultTokenEndpoint to VcIssuerBuilder ([96608ec](https://github.com/Sphereon-Opensource/OID4VCI/commit/96608ec72dcbf1f66e30b1ead8d363836db5d7d3))
 - added token_endpoint to the metadata ([72f2988](https://github.com/Sphereon-Opensource/OID4VCI/commit/72f2988a0837e53f0a01cc40b88fdeb2f948627a))
-- created special type for CredentialRequest v1_0_13 and fixed the tests for it ([25a6051](https://github.com/Sphereon-Opensource/OID4VCI/commit/25a6051ed0bb096c2249f24cd054c1a7aec97f61))
+- created special type for CredentialRequest v1_0_15 and fixed the tests for it ([25a6051](https://github.com/Sphereon-Opensource/OID4VCI/commit/25a6051ed0bb096c2249f24cd054c1a7aec97f61))
 - expose functions for experimental subject issuer support ([c4adecc](https://github.com/Sphereon-Opensource/OID4VCI/commit/c4adeccdbde6b42a7df85dfbdcb821f2fab8b819))
 - Unify how we get types from different spec versions ([449364b](https://github.com/Sphereon-Opensource/OID4VCI/commit/449364b49db4eaf5b847d5124687f9a3cd4bbc40))
 

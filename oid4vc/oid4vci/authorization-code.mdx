@@ -3,7 +3,7 @@ title: Authorization code
 description: 'Authorization code flow with external OIDC server'
 ---
 
-The agent by default supports so called pre-authorized-code flows, meaning that the issuer expects a user to already have done an authentication elsewhere, for instance in a portal. It could also be that the user is just visiting a public website without any form of authentication.
+The agent by default supports so-called Pre-Authorized Code flows (using grant type `urn:ietf:params:oauth:grant-type:pre-authorized_code`), meaning that the issuer expects a user to already have done an authentication elsewhere, for instance in a portal.
 
 We also support the so-called authorization code flow. This means the user will be authenticated during the issuance process, using the user agent (browser) on the device where the wallet resides. This typically provides as better user binding, as it is not really possible with this flow to hijack a session by copying a QR code for instance (you would have to authenticate in the process) and it happens just before getting the access token and the actual credential from the issuer.
 
@@ -13,7 +13,16 @@ We also support the so-called authorization code flow. This means the user will 
 
 In order to configure this on the agent the below changes are needed. The examples folder contains configurations to support the authorization code flow by default. All you need is to change the OIDC settings. The Swagger API can be found and tested at http://localhost:5010/oidc/oid4vci/api-docs
 
-## List the authorization server
+## Nonce Handling for Cryptographic Binding
+
+When cryptographic binding is used (binding credentials to the holder's key), the wallet needs a `c_nonce` value to create proofs of possession. The wallet can obtain this nonce from:
+- The Token Response (if provided by the Authorization Server)
+- Error responses from the Credential Endpoint
+- The optional Nonce Endpoint (if the Credential Issuer supports it via the `nonce_endpoint` metadata parameter)
+
+The Nonce Endpoint allows wallets to obtain fresh nonces on demand, which is useful for requesting multiple credentials or when a nonce has expired.
+
+## List the authorization servers
 In `conf/oid4vci_medata/your-issuer.json` you should have the following line in the `metadata` part:
 
 ```json
@@ -36,6 +45,41 @@ example:
     }
 }
 ```
+
+## Authorization Server Hint in Credential Offers
+
+When the Credential Issuer metadata contains multiple entries in the `authorization_servers` array, a Credential Offer MAY include an `authorization_server` parameter as a hint to help the wallet identify which Authorization Server to use.
+
+**Important**: If this hint is provided, wallets MUST verify that the `authorization_server` value matches one of the entries in the `authorization_servers` array obtained from the Credential Issuer metadata. The wallet MUST NOT proceed with the flow if the hint does not match.
+
+Example showing the hint in a Credential Offer (as seen in the example at the end of this document):
+```json
+"grants": {
+    "authorization_code": {
+        "issuer_state": "auth-9185-4e60-9901-d291e1338d7a",
+        "authorization_server": "https://auth01.test.sphereon.com/auth/realms/vdx"
+    }
+}
+```
+
+## Using Authorization Details (RAR)
+
+When using the `authorization_details` parameter (as defined by RFC 9396) to request credential issuance, and when the Credential Issuer metadata contains an `authorization_servers` parameter, the `authorization_details` object MUST contain the Credential Issuer's identifier in the `locations` element.
+
+Example Authorization Details with locations:
+```json
+{
+    "authorization_details": [
+        {
+            "type": "openid_credential",
+            "credential_configuration_id": "PensionSdJwt",
+            "locations": ["https://your-credential-issuer.example.com"]
+        }
+    ]
+}
+```
+
+When using `scope` values for credential issuance in this scenario, it is RECOMMENDED to also use the `resource` parameter (RFC 8707) with the Credential Issuer's identifier value to help the Authorization Server differentiate between Credential Issuers.
 
 ## Configure the resources server client options
 In order for the Issuer to verify with the OIDC Authorization Server the Authorization Server client options need to be specified. This needs to be a `confidential` client in order to access the introspection endpoint so the issuer can check access tokens for validity with the OIDC Authorization Server.
@@ -63,12 +107,14 @@ With the external authorization server defined in the `authorization_servers` me
 
 ```json
 {
+    "credential_issuer": "https://your-credential-issuer.example.com",
     "credential_configuration_ids": [
         "PensionSdJwt"
     ],
     "grants": {
         "authorization_code": {
-            "issuer_state": "auth-9185-4e60-9901-d291e1338d7a"
+            "issuer_state": "auth-9185-4e60-9901-d291e1338d7a",
+            "authorization_server": "https://auth01.test.sphereon.com/auth/realms/vdx"
         }
     },
     "qrCodeOpts": {},

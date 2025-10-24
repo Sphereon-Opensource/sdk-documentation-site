@@ -185,16 +185,6 @@
       ]
     },
     {
-      "group": "Presentation Exchange",
-      "pages": [
-        "pex/introduction",
-        "pex/api",
-        "pex/migration",
-        "pex/development",
-        "changelogs/pex/changelog"
-      ]
-    },
-    {
       "group": "W3C VC API",
       "pages": [
         "w3c/vc-api/api"

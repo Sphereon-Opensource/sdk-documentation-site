@@ -12,8 +12,21 @@ There are 3 endpoint types (tags) of which only the `Backend` endpoints are impo
 # Explanation
 These are requests to Issue credentials using the OpenID for Verifiable Credentials Issuance specification
 The first two GET requests are merely there for information purposes, so you can see what type of metadata is being hosted by an OpenID for Verifiable Credential Issuer and its OAuth2 Authorization Server
-You start with creating a credential offer URI, supplying it a pre-authorized-code from your backend. We suggest to make these values random.
+You start with creating a credential offer URI, supplying it a pre-authorized_code from your backend (for the urn:ietf:params:oauth:grant-type:pre-authorized_code grant type). We suggest to make these values random with high entropy.
+
+When using the Pre-Authorized Code flow, it is recommended to use Transaction Codes (tx_code) for security, especially in cross-device scenarios with QR codes. The Transaction Code should be sent to the end-user via a separate channel.
+
+## Cryptographic Binding and Nonces
+
+If the credentials being issued use cryptographic holder binding (binding the credential to the wallet's cryptographic key), the wallet will need to obtain a `c_nonce` value to create proof of possession. The wallet can get this nonce from:
+- The Token Response (when returned by the Authorization Server)
+- The optional Nonce Endpoint (if supported by the issuer via `nonce_endpoint` in metadata)
+- Error responses from the Credential Endpoint
+
+The `c_nonce` is used by the wallet to create a proof (typically a signed JWT) that demonstrates control of the private key associated with the public key that will be bound to the credential.
+
 Then you start polling the issuance status endpoint, until the credential is issued or an error has occurred.
+
 Lastly you can delete the credential
 
 <Info>We have [exercises](/exercises/oid4vc/oid4vci/credential-offer-exercises) that progressively let you use the REST API, understanding the process better in each step</Info>

@@ -121,7 +121,7 @@ Example:
     ],
     "credential_configurations_supported": {
       "PensionSdJwt": {
-        "format": "vc+sd-jwt",
+        "format": "dc+sd-jwt",
         "cryptographic_binding_methods_supported": [
           "did:web",
           "did:jwk"
@@ -493,7 +493,7 @@ Example:
             "PensionSdJwt"
           ],
           "template_path": "PensionSdJwt.hbs.json",
-          "format": "vc+sd-jwt"
+          "format": "dc+sd-jwt"
         }
       ]
     }
@@ -549,52 +549,51 @@ The OID4VP options file in `packages/conf/exercises/oid4vp_options` defines opti
 
 ```json
 {
-  "definitionId": "default",
+  "queryId": "default",
   "rpOpts": {
     "supportedVersions": [
-      200,
-      180,
-      110
+      1000,
+      280
     ],
     "responseMode": "direct_post",
     "clientMetadataOpts": {
-      "idTokenSigningAlgValuesSupported": [
+      "id_token_signing_alg_values_supported": [
         "ES256"
       ],
-      "requestObjectSigningAlgValuesSupported": [
+      "request_object_signing_alg_values_supported": [
         "ES256"
       ],
-      "responseTypesSupported": [
+      "response_types_supported": [
         "id_token",
         "vp_token"
       ],
       "client_name": "Findynet",
-      "vpFormatsSupported": {
+      "vp_formats_supported": {
         "jwt_vc_json": {
-          "alg": [
+          "alg_values": [
             "ES256"
           ]
         },
         "jwt_vp_json": {
-          "alg": [
+          "alg_values": [
             "ES256"
           ]
         },
         "jwt_vc": {
-          "alg": [
+          "alg_values": [
             "ES256"
           ]
         },
         "jwt_vp": {
-          "alg": [
+          "alg_values": [
             "ES256"
           ]
         }
       },
-      "scopesSupported": [
+      "scopes_supported": [
         "openid did_authn"
       ],
-      "subjectTypesSupported": [
+      "subject_types_supported": [
         "pairwise"
       ],
       "subject_syntax_types_supported": [
@@ -608,7 +607,6 @@ The OID4VP options file in `packages/conf/exercises/oid4vp_options` defines opti
     },
     "identifierOpts": {
       "idOpts": {
-        "clientIdScheme": "did",
         "method": "did",
         "identifier": "did:jwk:eyJhbGciOiJFUzI1NiIsInVzZSI6InNpZyIsImt0eSI6IkVDIiwiY3J2IjoiUC0yNTYiLCJ4IjoiVEcySDJ4MmRXWE4zdUNxWnBxRjF5c0FQUVZESkVOX0gtQ010YmdqYi1OZyIsInkiOiI5TThOeGQwUE4yMk05bFBEeGRwRHBvVEx6MTV3ZnlaSnM2WmhLSVVKMzM4In0",
         "kid": "did:jwk:eyJhbGciOiJFUzI1NiIsInVzZSI6InNpZyIsImt0eSI6IkVDIiwiY3J2IjoiUC0yNTYiLCJ4IjoiVEcySDJ4MmRXWE4zdUNxWnBxRjF5c0FQUVZESkVOX0gtQ010YmdqYi1OZyIsInkiOiI5TThOeGQwUE4yMk05bFBEeGRwRHBvVEx6MTV3ZnlaSnM2WmhLSVVKMzM4In0#0",
@@ -620,9 +618,9 @@ The OID4VP options file in `packages/conf/exercises/oid4vp_options` defines opti
 
 ```
 
-### Presentation Definitions
+### DCQL Definitions
 
-In `packages/agent/conf/exercises/presentation_definitions` you will find Presentation Definitions that the agent imports from disk. Look into the
+In `packages/agent/conf/exercises/dcql_definitions` you will find DCQL Definitions that the agent imports from disk. Look into the
 example file, but there are separate exercises on OID4VP.
 
 # 5. Environment variables
@@ -691,6 +689,9 @@ STATUS_LIST_CORRELATION_ID=default-example
 # The status list length. Should be at least 150.000 to ensure heard privacy for subjects. Random indices from this list will be used
 # when issuing credentials
 STATUS_LIST_LENGTH=150000
+# Status list type of the configured status list.
+# Choose between 'StatusList2021', 'OAuthStatusList' or 'BitstringStatusList'
+STATUS_LIST_TYPE=StatusList2021
 # Status list purpose.
 # Choose between 'revocation' to only allow revocation of a status, or 'suspension' to allow for (temporary) suspension and reactivation
 STATUS_LIST_PURPOSE=suspension # 'revocation' | 'suspension
@@ -711,7 +712,7 @@ UNIVERSAL_RESOLVER_RESOLVE_URL="https://dev.uniresolver.io/1.0/identifiers"
 
 # 6. Start the agent
 
-Now we are finaly ready to start the agent, exposed using the ngrok URL.
+Now we are finally ready to start the agent, exposed using the ngrok URL.
 
 Run the following command and make sure the agent keeps running. There could be a few warning messages, but that is okay for now.
 

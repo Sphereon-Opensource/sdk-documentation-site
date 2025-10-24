@@ -433,7 +433,7 @@ This can be a temporary suspension or a permanent suspension. As the name alread
 you can also go from `suspended` to `active`.
 
 The statuslist itself is a Verifiable Credential as well, which is issued and signed by the issuer of the Verifier VCs.
-The statuslist credentail contains a bitstring. This bitstring is at least 150.000 bits long and whenever a credential
+The statuslist credential contains a bitstring. This bitstring is at least 150.000 bits long and whenever a credential
 is being issued a random position in this bitstring will be used. This position will end up in the issued credential as
 a `statusListIndex` property of the `credentialStatus` object in the VC. The issuer will keep track of the statuslist
 id/url, the id of the issued VC, as well as the random statusListIndex. The value in the bitstring is either "0",
@@ -474,7 +474,7 @@ The `correlationId` value is used as an internal 2nd business key. You can use t
 property for most calls, in which case the API will not look at the URL. It will always serve/manage the statuslist with
 the given `correlationId`. This is handy if you want to assign your own identifier, which you will use to manage the
 list. A `correlationId` is mandatory when creating the status list and it needs to be unique!
-The `statusPorpose` property is used to distinguish the type of the statuslist. It cannot be changes afterwards!. It
+The `statusPurpose` property is used to distinguish the type of the statuslist. It cannot be changes afterwards!. It
 either is `revocation` or `suspension`. See above for more details on the difference between the two.
 
 Other optional properties:
